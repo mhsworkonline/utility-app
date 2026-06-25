@@ -12,18 +12,24 @@ function loadConfig(): Config {
   return JSON.parse(fs.readFileSync(cfgPath, "utf8")) as Config;
 }
 
-const PROMPT = `You are an expert radiologist. Analyze this X-ray image thoroughly.
+const PROMPT = `You are an expert radiologist. Analyze this medical image thoroughly.
+
+First identify the imaging modality:
+- X-Ray: 2D projection, grayscale, bones appear bright white
+- CT Scan: cross-sectional slices, Hounsfield density values visible, axial/coronal/sagittal views, higher soft tissue detail
+- MRI: soft tissue contrast with T1/T2 weighted sequences, no bone brightness, signal intensity variations, excellent soft tissue differentiation
 
 Return ONLY a valid JSON object (no markdown code fences, no extra text) with this exact structure:
 {
-  "xray_type": "chest / spine / dental / abdominal / limb / pelvis / skull / other",
+  "scan_type": "xray-chest / xray-spine / xray-dental / xray-limb / xray-pelvis / xray-skull / xray-abdomen / ct-chest / ct-abdomen / ct-brain / ct-spine / ct-pelvis / mri-brain / mri-spine / mri-knee / mri-abdomen / mri-pelvis / other",
+  "modality": "X-Ray / CT Scan / MRI",
   "overall_assessment": "2-3 sentence clinical summary",
   "overall_severity": "normal / moderate / high",
   "findings": [
     {
       "id": 1,
       "region": "anatomical region name",
-      "finding": "detailed clinical description of what you observe in this region",
+      "finding": "detailed clinical description — for CT mention density/Hounsfield values if relevant; for MRI mention signal intensity (T1/T2 hyperintense/hypointense); for X-Ray mention opacity, lucency, density",
       "severity": "normal / moderate / high",
       "zone": "one of: top-left, top-right, top-center, center-left, center, center-right, bottom-left, bottom-center, bottom-right, full"
     }
@@ -31,7 +37,7 @@ Return ONLY a valid JSON object (no markdown code fences, no extra text) with th
   "recommendations": "clinical recommendations or next steps"
 }
 
-Include all visible structures — normal findings, any abnormalities, bone density, soft tissues, foreign objects if present. Be specific and thorough. The zone field should reflect WHERE in the image the finding is located.`;
+Include all visible structures — normal findings, abnormalities, and modality-specific observations. Be specific and thorough. The zone field should reflect WHERE in the image the finding is located.`;
 
 export async function POST(req: NextRequest) {
   let body: { image_base64?: string };

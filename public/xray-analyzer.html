@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>XRay Identifier — Radiological Analysis</title>
+  <title>Medical Image Analyzer — Radiological Analysis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -667,8 +667,8 @@
   <!-- HEADER -->
   <header>
     <div>
-      <div class="logo-title">X<span>Ray</span> Identifier</div>
-      <div class="logo-sub">Radiological Analysis System</div>
+      <div class="logo-title">Medical <span>Image</span> Analyzer</div>
+      <div class="logo-sub">X-Ray · CT Scan · MRI</div>
     </div>
     <div class="header-right">
       <div class="status-pill">
@@ -703,8 +703,8 @@
         <!-- DROP ZONE -->
         <div class="dropzone" id="dropzone">
           <div class="dropzone-icon">🩻</div>
-          <div class="dropzone-title">Drop your X-Ray here</div>
-          <div class="dropzone-sub">Supports JPG · PNG · WEBP · BMP</div>
+          <div class="dropzone-title">Drop your medical image here</div>
+          <div class="dropzone-sub">X-Ray · CT Scan · MRI &nbsp;·&nbsp; JPG · PNG · WEBP · BMP</div>
           <div class="dropzone-hint">
             📂 Or click anywhere to browse files
           </div>
@@ -772,7 +772,7 @@
         <div class="empty-state" id="emptyState">
           <div class="empty-icon">🩻</div>
           <div class="empty-title">No image loaded</div>
-          <div class="empty-sub">Upload an X-Ray to begin. Local analysis starts immediately.</div>
+          <div class="empty-sub">Upload an X-Ray, CT Scan, or MRI image to begin analysis.</div>
         </div>
       </div>
 
@@ -956,7 +956,7 @@ function runLocalAnalysis() {
 //  GROQ ANALYSIS — via /api/analyze proxy
 // ═══════════════════════════════════════
 async function runGroqAnalysis() {
-  if (!currentImage) { showError('Upload an X-Ray image first.'); return; }
+  if (!currentImage) { showError('Upload a medical image first.'); return; }
 
   setLoading(true, 'ANALYZING WITH LLAMA 4 SCOUT…');
   try {
@@ -1039,7 +1039,9 @@ function renderFindings(groqData) {
   const aSection = document.getElementById('assessmentSection');
   if (groqData) {
     aSection.classList.add('visible');
-    document.getElementById('xrayType').textContent    = (groqData.xray_type||'').toUpperCase() + ' X-RAY';
+    const modality = groqData.modality || 'X-Ray';
+    const scanType = (groqData.scan_type || groqData.xray_type || '').replace(/-/g,' ').toUpperCase();
+    document.getElementById('xrayType').textContent = scanType ? `${scanType}  ·  ${modality.toUpperCase()}` : modality.toUpperCase();
     document.getElementById('assessmentText').textContent = groqData.overall_assessment || '';
     const sev = groqData.overall_severity || 'normal';
     document.getElementById('severityDot').className  = `severity-dot ${sev}`;
@@ -1232,7 +1234,7 @@ async function generatePDF() {
   doc.setFont('helvetica','bold');
   doc.setFontSize(18);
   doc.setTextColor(13,148,136);
-  doc.text('XRay Identifier', M, 11);
+  doc.text('Medical Image Analyzer', M, 11);
   doc.setFontSize(7);
   doc.setTextColor(100,116,139);
   doc.text('RADIOLOGICAL ANALYSIS REPORT', M, 17);
@@ -1283,7 +1285,9 @@ async function generatePDF() {
     doc.setFont('helvetica','bold');
     doc.setFontSize(7);
     doc.setTextColor(100,116,139);
-    doc.text((analysisResult.xray_type||'').toUpperCase()+' X-RAY  ·  OVERALL ASSESSMENT', M+4, y+6);
+    const pMod = analysisResult.modality || 'X-Ray';
+    const pScan = (analysisResult.scan_type || analysisResult.xray_type || '').replace(/-/g,' ').toUpperCase();
+    doc.text(`${pScan ? pScan + '  ·  ' : ''}${pMod.toUpperCase()}  ·  OVERALL ASSESSMENT`, M+4, y+6);
     doc.setFont('helvetica','normal');
     doc.setFontSize(8);
     doc.setTextColor(51,65,85);
@@ -1373,7 +1377,7 @@ async function generatePDF() {
     doc.setFont('helvetica','normal');
     doc.setFontSize(6);
     doc.setTextColor(148,163,184);
-    doc.text('XRay Identifier · For educational use only · Not for clinical diagnosis',M,PH-7);
+    doc.text('Medical Image Analyzer · For educational use only · Not for clinical diagnosis',M,PH-7);
     doc.text(`Page ${p} of ${total}`,PW-M,PH-7,{align:'right'});
   }
 

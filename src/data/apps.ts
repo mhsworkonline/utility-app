@@ -17,8 +17,8 @@ export const apps: App[] = [
   },
   {
     id: "xray-identifier",
-    name: "X-Ray Identifier",
-    description: "Upload an X-ray image and get a detailed AI-powered radiological analysis with findings and recommendations.",
+    name: "Medical Image Analyzer",
+    description: "Upload an X-Ray, CT Scan, or MRI image and get a detailed AI-powered radiological analysis with findings and recommendations.",
     url: "/xray-analyzer.html",
     tags: ["AI", "Medical"],
   },
