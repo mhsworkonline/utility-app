@@ -1,0 +1,5 @@
+{
+  "groq_api_key": "YOUR_GROQ_API_KEY_HERE",
+  "port": 3001,
+  "model": "meta-llama/llama-4-scout-17b-16e-instruct"
+}

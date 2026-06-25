@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>OTC Medicine Infographic</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --bg:#F2F1ED;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F7F4;
+  --border:#E2E1DC;
+  --text-dark:#18181A;
+  --text-mid:#4A4A50;
+  --text-muted:#8A8A92;
+  --rx-bg:#FEF0EF;
+  --rx-text:#A41818;
+  --rx-border:#EDD0CE;
+  --otc-section:#EDF2FA;
+  --rx-section:#FDF2F1;
+  --font-serif:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+}
+
+body{
+  font-family:var(--font-sans);
+  background:var(--bg);
+  color:var(--text-dark);
+  -webkit-font-smoothing:antialiased;
+  padding:0;
+}
+
+.page{max-width:1200px;margin:0 auto;padding:2.5rem 2rem 4rem;}
+
+/* ── HERO ── */
+.hero{
+  display:block;
+  padding:2rem 2.5rem 2.25rem;
+  background:var(--text-dark);
+  border-radius:16px;
+  margin-bottom:2rem;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;
+  top:-60px;right:-60px;
+  width:280px;height:280px;border-radius:50%;
+  background:rgba(255,255,255,0.04);
+}
+.hero::after{
+  content:'';position:absolute;
+  bottom:-40px;right:80px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(255,255,255,0.03);
+}
+.hero-eyebrow{
+  font-size:11px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,0.4);margin-bottom:12px;
+}
+.hero-title{
+  font-size:32px;font-weight:600;
+  color:#FFFFFF;line-height:1.2;
+  letter-spacing:-0.02em;margin-bottom:10px;
+}
+.hero-sub{
+  font-size:14px;color:rgba(255,255,255,0.5);
+  line-height:1.5;max-width:580px;margin-bottom:1.25rem;
+}
+.hero-stats{
+  display:flex;gap:8px;flex-wrap:wrap;
+  position:relative;z-index:1;
+}
+.hero-stat-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:20px;padding:5px 14px;
+  font-size:13px;color:rgba(255,255,255,0.6);
+}
+.hero-stat-pill strong{color:#fff;font-weight:600;}
+
+/* ── LEGEND ── */
+.legend{
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  padding:12px 16px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:2rem;
+  font-size:13px;color:var(--text-mid);
+}
+.legend-title{
+  font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text-muted);margin-right:4px;
+}
+.legend-item{display:flex;align-items:center;gap:7px;}
+.legend-block{width:28px;height:4px;border-radius:2px;}
+.legend-rx-badge{
+  font-size:11px;font-weight:700;padding:2px 6px;
+  border-radius:4px;background:var(--rx-bg);
+  color:var(--rx-text);border:1px solid var(--rx-border);
+}
+
+/* ── SECTION HEADER ── */
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:1.25rem;}
+.section-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.section-label-small{
+  font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:2px;
+}
+.section-title{
+  font-size:20px;font-weight:700;
+  letter-spacing:-0.01em;line-height:1.2;
+}
+.section-line{flex:1;height:1.5px;background:var(--border);}
+
+/* ── SECTION WRAPPERS ── */
+.otc-wrap{
+  background:var(--otc-section);border:1px solid #D8E4F2;
+  border-radius:16px;padding:1.75rem;margin-bottom:1.75rem;
+}
+.rx-wrap{
+  background:var(--rx-section);border:1px solid #EDD8D6;
+  border-radius:16px;padding:1.75rem;
+}
+
+/* ── CARD GRID ── */
+.card-grid,.card-grid-2{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+}
+
+/* ── CONDITION CARD ── */
+.ccard{
+  background:var(--surface);border-radius:12px;
+  border:1px solid var(--border);
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.ccard-top{height:4px;width:100%;flex-shrink:0;}
+.ccard-head{
+  padding:12px 16px 8px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+}
+.ccard-name{
+  font-size:15px;font-weight:700;
+  line-height:1.2;letter-spacing:-0.01em;
+}
+.ccard-count{
+  font-size:12px;color:var(--text-muted);
+  font-weight:600;white-space:nowrap;flex-shrink:0;
+}
+.ccard-body{padding:0 16px 12px;flex:1;}
+
+/* ── SECTION LABEL ── */
+.drug-sec-label{
+  font-size:11px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-muted);padding:8px 0 4px;
+}
+
+/* ── PRIMARY DRUG BLOCK ── */
+.drug-primary{
+  background:var(--surface-alt);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px;margin-bottom:6px;
+}
+.drug-primary:last-of-type{margin-bottom:0;}
+.dp-name{font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:2px;line-height:20px;}
+.dp-dose{font-size:13px;color:var(--text-mid);margin-bottom:2px;line-height:20px;}
+.dp-info{font-size:12px;color:var(--text-muted);font-style:italic;margin-bottom:4px;line-height:20px;}
+.dp-tag{
+  display:inline-block;font-size:11px;font-weight:600;
+  padding:2px 6px;border-radius:4px;letter-spacing:.02em;
+}
+
+/* ── ALTERNATIVES ── */
+.alt-section{border-top:1px dashed var(--border);margin-top:8px;padding-top:2px;}
+.alt-list{display:flex;flex-wrap:wrap;gap:4px;padding-top:4px;}
+.alt-pill{
+  font-size:12px;padding:3px 8px;border-radius:20px;
+  background:var(--surface-alt);border:1px solid var(--border);
+  color:var(--text-mid);white-space:nowrap;
+}
+
+/* ── ANTIBIOTICS IN MIXED CARD ── */
+.abx-band{
+  margin:8px -16px -12px;padding:8px 16px 12px;
+  background:var(--rx-bg);border-top:1px solid var(--rx-border);
+}
+.abx-band-label{
+  font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--rx-text);
+  margin-bottom:5px;display:flex;align-items:center;gap:5px;
+}
+.abx-band-label .rx-sm{
+  background:var(--rx-text);color:#fff;
+  font-size:11px;font-weight:700;padding:1px 4px;border-radius:4px;
+}
+.abx-list{display:flex;flex-wrap:wrap;gap:4px;}
+.abx-pill{
+  font-size:12px;padding:3px 8px;border-radius:20px;
+  background:rgba(164,24,24,0.07);border:1px solid var(--rx-border);
+  color:var(--rx-text);white-space:nowrap;
+}
+
+/* ── RX-ONLY CARD DRUG ROW ── */
+.rxdrug-row{
+  display:flex;align-items:flex-start;gap:8px;
+  border-top:1px solid #F0D8D6;padding:8px 0;
+}
+.rxdrug-row:first-of-type{border-top:none;padding-top:4px;}
+.rx-marker{
+  flex-shrink:0;font-size:11px;font-weight:700;
+  padding:2px 5px;border-radius:4px;
+  background:var(--rx-text);color:#fff;
+  margin-top:2px;letter-spacing:.02em;
+}
+.rxd-name{font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:2px;line-height:20px;}
+.rxd-dose{font-size:13px;color:var(--text-mid);margin-bottom:2px;line-height:20px;}
+.rxd-info{font-size:12px;color:var(--text-muted);font-style:italic;margin-bottom:3px;line-height:20px;}
+.rxd-tag{
+  display:inline-block;font-size:11px;font-weight:600;
+  padding:2px 6px;border-radius:4px;
+  background:rgba(164,24,24,0.08);color:var(--rx-text);
+  border:1px solid var(--rx-border);letter-spacing:.02em;
+}
+
+/* ── DISCLAIMER ── */
+.disclaimer{
+  margin-top:1.75rem;padding:1rem 1.5rem;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;border-left:4px solid #C0C0B8;
+  font-size:13px;color:var(--text-muted);line-height:1.75;
+}
+.disclaimer strong{color:var(--text-mid);font-weight:700;}
+
+/* ── PRINT ── */
+@media print{
+  body{background:#fff;padding:0;}
+  .page{padding:1cm;max-width:100%;}
+  .hero{padding:1.5rem 2rem;}
+  .hero-title{font-size:28px;}
+  .card-grid,.card-grid-2{gap:8px;}
+  .ccard{break-inside:avoid;}
+  .otc-wrap,.rx-wrap{padding:1.25rem;}
+}
+
+/* ── SEARCH BAR ── */
+.search-bar{margin-bottom:2rem;}
+.search-wrap{position:relative;display:flex;align-items:center;}
+.search-icon{position:absolute;left:13px;color:var(--text-muted);pointer-events:none;flex-shrink:0;}
+#search-input{
+  width:100%;padding:11px 40px;
+  border:1.5px solid var(--border);border-radius:8px;
+  background:var(--surface);font-family:var(--font-sans);
+  font-size:14px;color:var(--text-dark);outline:none;
+  transition:border-color 0.15s,box-shadow 0.15s;
+}
+#search-input:focus{border-color:#3A6EA5;box-shadow:0 0 0 3px rgba(58,110,165,0.12);}
+#search-input::placeholder{color:var(--text-muted);}
+.search-clear{
+  position:absolute;right:12px;background:none;border:none;
+  cursor:pointer;color:var(--text-muted);font-size:14px;
+  padding:4px 6px;border-radius:4px;display:none;line-height:1;
+  transition:color 0.1s;
+}
+.search-clear:hover{color:var(--text-dark);}
+.search-empty{
+  text-align:center;color:var(--text-muted);font-size:13px;
+  padding:2rem 0;display:none;
+}
+.results-wrap{display:none;margin-bottom:2rem;}
+.results-label{
+  font-size:11px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-muted);margin-bottom:1rem;
+}
+.results-label strong{color:var(--text-dark);font-weight:700;}
+.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:900px){.results-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.results-grid{grid-template-columns:1fr;}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .card-grid,.card-grid-2{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .card-grid,.card-grid-2{grid-template-columns:1fr;}
+  .hero-title{font-size:24px;}
+  .hero{padding:1.5rem;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Clinical Quick Reference · India-specific · Adult Dosage</div>
+    <div class="hero-title">OTC Medicine<br>Reference Guide</div>
+    <div class="hero-sub">Active ingredients, dosage, mechanism and cautions for common conditions. Antibiotic entries are prescription-only (Schedule H) — do not self-medicate.</div>
+    <div class="hero-stats">
+      <span class="hero-stat-pill"><strong>21</strong> Conditions</span>
+      <span class="hero-stat-pill"><strong>150+</strong> Medicines</span>
+    </div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <span class="legend-title">Legend</span>
+  <div class="legend-item"><div class="legend-block" style="background:#3A6EA5;"></div><span>Primary medicine — full detail</span></div>
+  <div class="legend-item"><div class="legend-block" style="background:#C0C0B8;border-radius:10px;"></div><span>Alternatives — compact</span></div>
+  <div class="legend-item"><span class="legend-rx-badge">℞</span><span>Antibiotic — prescription required</span></div>
+</div>
+
+<!-- SEARCH BAR -->
+<div class="search-bar">
+  <div class="search-wrap">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M10 10L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <input type="text" id="search-input" placeholder="Search by disease or medicine name…" autocomplete="off"/>
+    <button id="search-clear" class="search-clear" aria-label="Clear search">✕</button>
+  </div>
+</div>
+
+<!-- SEARCH RESULTS -->
+<div id="results-wrap" class="results-wrap">
+  <div class="results-label">Showing <strong id="results-count">0</strong> result<span id="results-plural">s</span></div>
+  <div id="results-grid" class="results-grid"></div>
+  <div id="search-empty" class="search-empty">No matches found for your search.</div>
+</div>
+
+<!-- OTC SECTION -->
+<div class="otc-wrap">
+  <div class="section-header">
+    <div class="section-icon" style="background:#E8EFF8;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="8" width="14" height="10" rx="2" fill="#3A6EA5" opacity=".2"/><rect x="6" y="4" width="8" height="6" rx="1.5" fill="#3A6EA5" opacity=".5"/><circle cx="10" cy="13" r="2" fill="#3A6EA5"/></svg>
+    </div>
+    <div class="section-title-block">
+      <div class="section-label-small" style="color:#3A6EA5;">Section 01</div>
+      <div class="section-title" style="color:#1A3050;">Over-the-Counter Medicines</div>
+    </div>
+    <div class="section-line" style="background:#C8D8EC;"></div>
+  </div>
+  <div class="card-grid" id="otc-grid"></div>
+</div>
+
+<!-- RX SECTION -->
+<div class="rx-wrap">
+  <div class="section-header">
+    <div class="section-icon" style="background:#FAE8E8;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" fill="#A41818" opacity=".15"/><text x="10" y="14.5" font-size="10" font-weight="700" fill="#A41818" text-anchor="middle" font-family="serif">℞</text></svg>
+    </div>
+    <div class="section-title-block">
+      <div class="section-label-small" style="color:#A41818;">Section 02</div>
+      <div class="section-title" style="color:#5A1010;">Antibiotic-Specific Conditions</div>
+    </div>
+    <div class="section-line" style="background:#EDD0CE;"></div>
+  </div>
+  <div class="card-grid-2" id="rx-grid"></div>
+</div>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  <strong>Important:</strong> This infographic is a general adult reference only. Always consult a qualified doctor if symptoms persist beyond 2–3 days or worsen. Do not administer to children, elderly, or pregnant women without medical advice. All ℞-marked medicines are Schedule H prescription drugs in India — self-medication with antibiotics is strongly discouraged and contributes to antimicrobial resistance.
+</div>
+
+</div><!-- /page -->
+
+<script>
+const OTC_ACCENTS=['#3A6EA5','#2E7D68','#4A7840','#A04A30','#4A5FA0','#7A4A9A','#5A7030','#4A607A','#8A6020'];
+const RX_ACCENTS=['#982020','#7A3055','#1E6882','#2E6840','#782040'];
+
+const TAG_P=[
+  {bg:'#EAF0F8',tx:'#1C3A70'},{bg:'#E4F2EC',tx:'#144A30'},
+  {bg:'#EAF4E4',tx:'#1A4810'},{bg:'#FAE8E2',tx:'#701808'},
+  {bg:'#EAECF8',tx:'#202870'},{bg:'#F2EAF8',tx:'#501870'},
+  {bg:'#EEF4E2',tx:'#304010'},{bg:'#E8EEF4',tx:'#203040'},
+  {bg:'#F4EEE0',tx:'#604010'},
+];
+
+const OTC=[
+  {name:'Acidity / Heartburn',ai:0,
+   pri:[
+    ['Aluminium Hydroxide + Magnesium Hydroxide','1–2 tabs or 10 ml after meals & at bedtime','Neutralises stomach acid — avoid in kidney failure','Antacid'],
+    ['Famotidine','20 mg twice daily before meals','Blocks H2 receptors to reduce acid — avoid in kidney disease','H2 blocker'],
+   ],
+   alt:['Calcium Carbonate','Sodium Bicarbonate','Sucralfate','Ranitidine','Dicyclomine','Rabeprazole','Omeprazole','Pantoprazole','Lansoprazole','Esomeprazole'],
+   abx:[]},
+  {name:'Vomiting / Nausea',ai:1,
+   pri:[
+    ['Domperidone','10 mg 3× daily, 30 min before meals','Speeds up stomach emptying — avoid in heart conditions','Prokinetic'],
+    ['Metoclopramide','10 mg 3× daily before meals (max 5 days)','Blocks nausea signals — may cause drowsiness','Antiemetic'],
+   ],
+   alt:['Ondansetron','Ginger Extract','Promethazine'],
+   abx:[]},
+  {name:'Diarrhoea',ai:2,
+   pri:[
+    ['ORS (Oral Rehydration Salts)','200–400 ml after each loose stool','Replenishes fluids and electrolytes — always the first step','First-line'],
+    ['Loperamide','4 mg initially, then 2 mg per stool (max 16 mg/day)','Slows gut motility — avoid in bloody diarrhoea or fever','Antidiarrhoeal'],
+   ],
+   alt:['Bismuth Subsalicylate','Activated Charcoal','Racecadotril','Zinc'],
+   abx:['Ciprofloxacin','Metronidazole','Tinidazole','Rifaximin','Secnidazole','Norfloxacin','Cefixime']},
+  {name:'Fever',ai:3,
+   pri:[
+    ['Paracetamol','500–1000 mg every 4–6 hrs (max 4 g/day)','Reduces fever centrally — safest option, avoid excess in liver disease','Antipyretic'],
+    ['Ibuprofen','400 mg every 6–8 hrs with food','Anti-inflammatory and antipyretic — always take with food','NSAID'],
+    ['Nimesulide','100 mg twice daily after food (max 15 days)','Widely used in India — avoid in liver disease, children under 12, and pregnancy','NSAID'],
+   ],
+   alt:['Mefenamic Acid','Diclofenac','Aspirin'],
+   abx:[]},
+  {name:'Cold / Cough',ai:4,
+   pri:[
+    ['Cetirizine','10 mg once daily at night','Antihistamine — reduces sneezing and runny nose, mildly sedating','Antihistamine'],
+    ['Dextromethorphan','15–30 mg every 6–8 hrs','Suppresses dry cough reflex — not for wet/productive cough','Cough suppressant'],
+    ['Guaifenesin','200–400 mg every 4 hrs','Thins mucus for easier clearance — drink plenty of water','Expectorant'],
+    ['Phenylephrine / Pseudoephedrine','10 mg (Phenylephrine) or 60 mg (Pseudoephedrine) every 4–6 hrs','Nasal decongestant — avoid in hypertension; active ingredient in Sinarest, D-Cold Total','Decongestant'],
+   ],
+   alt:['Ambroxol','Bromhexine','Xylometazoline','N-Acetylcysteine (NAC)','Fexofenadine','Vasaka Extract'],
+   abx:['Amoxicillin','Amoxicillin + Clavulanic Acid','Azithromycin','Clarithromycin','Doxycycline','Levofloxacin','Cefuroxime','Erythromycin','Co-trimoxazole']},
+  {name:'Headache',ai:5,
+   pri:[
+    ['Paracetamol','500–1000 mg every 4–6 hrs (max 4 g/day)','First-line analgesic — safest option, avoid excess in liver disease','Analgesic'],
+    ['Aspirin','300–600 mg every 4–6 hrs with food','Anti-inflammatory — avoid under 16 yrs and in peptic ulcer','Analgesic'],
+   ],
+   alt:['Ibuprofen','Naproxen','Propyphenazone + Paracetamol + Caffeine','Ibuprofen + Paracetamol'],
+   abx:[]},
+  {name:'Allergies',ai:6,
+   pri:[
+    ['Cetirizine','10 mg once daily','Blocks histamine — good for skin and nasal allergy, mildly sedating','Antihistamine'],
+    ['Loratadine','10 mg once daily','Non-drowsy antihistamine — good for daytime use','Antihistamine'],
+    ['Chlorpheniramine (CPM)','4 mg every 4–6 hrs','Effective older antihistamine — causes significant drowsiness','Antihistamine'],
+   ],
+   alt:['Fexofenadine','Levocetirizine','Bilastine'],
+   abx:[]},
+  {name:'Muscle Pain',ai:7,
+   pri:[
+    ['Ibuprofen','400 mg every 6–8 hrs with food','Reduces inflammation and pain — take with food to protect stomach','NSAID'],
+    ['Etoricoxib','60–90 mg once daily with or without food','COX-2 inhibitor — fewer GI side effects than traditional NSAIDs, avoid in heart disease','COX-2 inhibitor'],
+    ['Diclofenac (topical gel)','Apply 2–3× daily on affected area','Localised anti-inflammatory — fewer systemic side effects','Topical NSAID'],
+   ],
+   alt:['Naproxen','Methyl Salicylate + Menthol','Thiocolchicoside','Piroxicam (topical)'],
+   abx:[]},
+  {name:'Constipation',ai:8,
+   pri:[
+    ['Isabgol (Psyllium husk)','1–2 tsp in full glass of water, 1–2× daily','Adds bulk to stool — safest first-line, drink plenty of water','Bulk-forming'],
+    ['Bisacodyl','5–10 mg at bedtime','Stimulates bowel — works overnight, avoid long-term use','Stimulant laxative'],
+    ['Lactulose','15–30 ml once or twice daily','Draws water into bowel — gentle, suitable for elderly','Osmotic laxative'],
+   ],
+   alt:['Senna (Sennoside)','Macrogol / PEG','Glycerin Suppositories','Docusate Sodium','Triphala Churna','Castor Oil'],
+   abx:[]},
+
+  {name:'Sore Throat',ai:9,
+   pri:[
+    ['Benzydamine HCl gargle / spray','Gargle 15 ml every 1.5–3 hrs or 4–8 sprays every 1.5–3 hrs','Local anti-inflammatory and anaesthetic — do not swallow gargle','Throat anaesthetic'],
+    ['Dichlorobenzyl alcohol + Amylmetacresol (Strepsils)','1 lozenge every 2–3 hrs (max 8/day)','Antiseptic lozenge — dissolve slowly, do not chew or swallow','Antiseptic lozenge'],
+   ],
+   alt:['Chlorhexidine gargle','Povidone-iodine gargle','Cetylpyridinium chloride','Flurbiprofen lozenges','Lidocaine spray'],
+   abx:['Amoxicillin','Azithromycin','Clarithromycin','Cefalexin']},
+
+  {name:'Bloating / Gas',ai:10,
+   pri:[
+    ['Simethicone','40–125 mg after meals and at bedtime','Breaks up gas bubbles — no systemic absorption, very safe','Antiflatulent'],
+    ['Pancreatin (Digestive enzymes)','1–2 tablets with each meal','Aids digestion and reduces gas from maldigestion — take with first bite of meal','Digestive enzyme'],
+   ],
+   alt:['Dimethicone','Activated Charcoal','Fennel (Saunf) extract','Hing (Asafoetida) preparation','Dill seed water'],
+   abx:[]},
+
+  {name:'Mouth Ulcers',ai:11,
+   pri:[
+    ['Choline Salicylate gel (Bonjela)','Apply to ulcer 3–4× daily with clean fingertip','Anti-inflammatory and mild analgesic — avoid swallowing in large amounts','Topical analgesic'],
+    ['Benzocaine 20% gel','Apply to affected area 3–4× daily','Local anaesthetic for quick pain relief — numbs the ulcer site','Topical anaesthetic'],
+   ],
+   alt:['Triamcinolone dental paste','Povidone-iodine mouthwash','Chlorhexidine mouthwash','Vitamin B12 supplements','Zinc sulphate lozenges'],
+   abx:[]},
+
+  {name:'Fungal Skin Infections',ai:12,
+   pri:[
+    ['Clotrimazole 1% cream','Apply twice daily for 2–4 weeks','Broad-spectrum azole — for ringworm, athlete\'s foot, candidiasis; keep area dry','Azole antifungal'],
+    ['Terbinafine 1% cream','Apply once–twice daily for 1–2 weeks','Fungicidal — faster action for dermatophytes (ringworm, tinea); shorter course needed','Allylamine antifungal'],
+   ],
+   alt:['Miconazole cream','Ketoconazole cream','Sertaconazole cream','Ciclopirox gel','Fluconazole oral (℞)','Itraconazole oral (℞)'],
+   abx:[]},
+
+  {name:'Worm Infections',ai:13,
+   pri:[
+    ['Albendazole','400 mg single dose; repeat after 2 weeks for pinworms','Broad-spectrum anthelmintic — single-dose convenience, safe for adults','Anthelmintic'],
+    ['Mebendazole','100 mg twice daily for 3 days or 500 mg single dose','Targets intestinal worms — not absorbed, acts locally in gut','Anthelmintic'],
+   ],
+   alt:['Pyrantel Pamoate','Levamisole','Nitazoxanide (for Giardia)'],
+   abx:[]},
+
+  {name:'Period Pain',ai:14,
+   pri:[
+    ['Mefenamic Acid','500 mg 3× daily with food; start at onset of pain','NSAID specifically effective for dysmenorrhea — take with food to avoid stomach upset','NSAID'],
+    ['Ibuprofen','400–600 mg every 6–8 hrs with food','Anti-inflammatory and analgesic — start as soon as pain begins','NSAID'],
+   ],
+   alt:['Naproxen','Dicyclomine + Mefenamic Acid (combo)','Paracetamol','Diclofenac','Tranexamic Acid (for heavy bleeding)'],
+   abx:[]},
+
+  {name:'Eye Irritation / Dry Eyes',ai:15,
+   pri:[
+    ['Carboxymethylcellulose (CMC) drops','1–2 drops in affected eye(s) as needed','Lubricates and soothes dry eyes — preservative-free preferred for frequent use','Lubricant'],
+    ['Ketotifen fumarate drops','1 drop in each eye twice daily','Antihistamine eye drop for allergic conjunctivitis — remove contact lenses before use','Antihistamine'],
+   ],
+   alt:['Hydroxypropyl methylcellulose (HPMC)','Sodium Hyaluronate drops','Olopatadine drops','Naphazoline drops (redness — max 3 days)'],
+   abx:[]},
+];
+
+const RX_DATA=[
+  {name:'UTI',ai:0,
+   abx:[
+    ['Nitrofurantoin','100 mg twice daily for 5–7 days','Acts in urinary tract only — take with food, avoid in kidney disease','Nitrofuran'],
+    ['Ciprofloxacin','250–500 mg twice daily for 3–7 days','Broad-spectrum — avoid in tendon issues and pregnancy','Fluoroquinolone'],
+    ['Norfloxacin','400 mg twice daily for 3–7 days','Urinary-targeted — avoid in children and pregnancy','Fluoroquinolone'],
+    ['Co-trimoxazole','960 mg twice daily for 3–7 days','Dual antibiotic — avoid in sulfa allergy','Sulfonamide combo'],
+    ['Fosfomycin','3 g single sachet dose','Single-dose, well tolerated — good for uncomplicated UTI','Phosphonic acid'],
+    ['Ofloxacin','200 mg twice daily for 3–7 days','Effective for lower and upper UTI','Fluoroquinolone'],
+    ['Cefixime','200 mg twice daily for 5–7 days','Cephalosporin — preferred in pregnancy','Cephalosporin'],
+   ]},
+  {name:'Skin Infections',ai:1,
+   abx:[
+    ['Cloxacillin','500 mg 4× daily for 5–7 days','Targets staph skin infections — take on empty stomach','Penicillin'],
+    ['Cefalexin','500 mg 4× daily for 5–7 days','Good for cellulitis and impetigo','Cephalosporin'],
+    ['Amoxicillin + Clavulanic Acid','625 mg twice daily for 5–7 days','Broader coverage for resistant skin infections','Penicillin combo'],
+    ['Mupirocin (topical)','Apply 3× daily for 5–7 days','Localised topical — avoid on large wounds','Topical antibiotic'],
+    ['Fusidic Acid (topical)','Apply 3× daily for 5–7 days','Effective for impetigo and small wound infections','Topical antibiotic'],
+    ['Clindamycin','150–300 mg 4× daily for 7 days','Good for acne and deeper skin infections','Lincosamide'],
+    ['Doxycycline','100 mg twice daily for 5–7 days','Used for acne — avoid in pregnancy and under 8 yrs','Tetracycline'],
+   ]},
+  {name:'Eye Infections',ai:2,
+   abx:[
+    ['Chloramphenicol (drops)','1–2 drops every 2–4 hrs for 5 days','Broad-spectrum — avoid prolonged use','Topical antibiotic'],
+    ['Moxifloxacin (drops)','1 drop 3× daily for 7 days','Potent fluoroquinolone — first-line for conjunctivitis','Topical fluoroquinolone'],
+    ['Tobramycin (drops)','1–2 drops every 4 hrs for 7 days','Aminoglycoside — effective for gram-negative bacteria','Topical aminoglycoside'],
+    ['Ofloxacin (drops)','1–2 drops every 2–4 hrs for 7 days','Broad-spectrum — widely available in India','Topical fluoroquinolone'],
+    ['Gentamicin (drops)','1–2 drops every 4 hrs for 7 days','Broad aminoglycoside — avoid if allergy known','Topical aminoglycoside'],
+   ]},
+  {name:'Ear Infections',ai:3,
+   abx:[
+    ['Ciprofloxacin + Dexamethasone (drops)','4 drops twice daily for 7 days','Antibiotic + steroid combo — reduces infection and inflammation','Topical combo'],
+    ['Neomycin + Polymyxin B (drops)','3–4 drops 3–4× daily for 7–10 days','Broad-spectrum — avoid in perforated eardrum','Topical combo'],
+    ['Ofloxacin (drops)','5 drops twice daily for 7 days','Safe with perforated eardrum — preferred in such cases','Topical fluoroquinolone'],
+    ['Gentamicin (drops)','3–4 drops 3× daily for 7 days','Effective for bacterial outer ear infections','Topical aminoglycoside'],
+   ]},
+  {name:'Dental / Oral Infections',ai:4,
+   abx:[
+    ['Amoxicillin','500 mg 3× daily for 5–7 days','First-line for dental abscess — avoid in penicillin allergy','Penicillin'],
+    ['Metronidazole','400 mg 3× daily for 5–7 days','Targets mouth anaerobes — avoid all alcohol','Nitroimidazole'],
+    ['Amoxicillin + Metronidazole','500 mg + 400 mg 3× daily for 5–7 days','Combined for severe dental infections — avoid alcohol','Combination'],
+    ['Clindamycin','150–300 mg 4× daily for 5–7 days','For penicillin allergy — risk of C. diff with prolonged use','Lincosamide'],
+    ['Doxycycline','100 mg twice daily for 5–7 days','For periodontal disease — avoid in pregnancy','Tetracycline'],
+   ]},
+];
+
+function mk(tag,cls,sty,inner){
+  const e=document.createElement(tag);
+  if(cls)e.className=cls;
+  if(sty)e.style.cssText=sty;
+  if(inner!==undefined)e.innerHTML=inner;
+  return e;
+}
+
+// Build OTC cards
+const otcGrid=document.getElementById('otc-grid');
+OTC.forEach((c,ci)=>{
+  const acc=OTC_ACCENTS[ci%OTC_ACCENTS.length];
+  const tp=TAG_P[ci%TAG_P.length];
+  const total=c.pri.length+c.alt.length+c.abx.length;
+
+  const card=mk('div','ccard');
+  card.dataset.search=[c.name,...c.pri.map(m=>m[0]),...c.alt,...c.abx].join(' ').toLowerCase();
+  card.appendChild(mk('div','ccard-top',`background:${acc};`));
+
+  const head=mk('div','ccard-head');
+  head.appendChild(mk('span','ccard-name',`color:${acc};`,c.name));
+  head.appendChild(mk('span','ccard-count',null,total+' drugs'));
+  card.appendChild(head);
+
+  const body=mk('div','ccard-body');
+
+  // Primary
+  body.appendChild(mk('div','drug-sec-label',null,'Primary'));
+  c.pri.forEach(m=>{
+    const blk=mk('div','drug-primary',`border-color:${acc}30;`);
+    blk.appendChild(mk('div','dp-name',null,m[0]));
+    blk.appendChild(mk('div','dp-dose',null,m[1]));
+    blk.appendChild(mk('div','dp-info',null,m[2]));
+    blk.appendChild(mk('span','dp-tag',`background:${tp.bg};color:${tp.tx};`,m[3]));
+    body.appendChild(blk);
+  });
+
+  // Alternatives
+  if(c.alt.length){
+    const altSec=mk('div','alt-section');
+    altSec.appendChild(mk('div','drug-sec-label',null,'Alternatives'));
+    const list=mk('div','alt-list');
+    c.alt.forEach(a=>{
+      list.appendChild(mk('span','alt-pill',null,a));
+    });
+    altSec.appendChild(list);
+    body.appendChild(altSec);
+  }
+
+  // Antibiotics band
+  if(c.abx.length){
+    const band=mk('div','abx-band');
+    const lbl=mk('div','abx-band-label');
+    lbl.innerHTML='<span class="rx-sm">℞</span> Antibiotics (prescription)';
+    band.appendChild(lbl);
+    const list=mk('div','abx-list');
+    c.abx.forEach(a=>list.appendChild(mk('span','abx-pill',null,a)));
+    band.appendChild(list);
+    body.appendChild(band);
+  }
+
+  card.appendChild(body);
+  otcGrid.appendChild(card);
+});
+
+// Build RX cards
+const rxGrid=document.getElementById('rx-grid');
+RX_DATA.forEach((c,ci)=>{
+  const acc=RX_ACCENTS[ci%RX_ACCENTS.length];
+
+  const card=mk('div','ccard');
+  card.dataset.search=[c.name,...c.abx.map(m=>m[0])].join(' ').toLowerCase();
+  card.appendChild(mk('div','ccard-top',`background:${acc};`));
+
+  const head=mk('div','ccard-head',`border-bottom-color:#F0D8D6;`);
+  const nameSpan=mk('span','ccard-name',`color:${acc};`,c.name);
+  head.appendChild(nameSpan);
+  const countSpan=mk('span','ccard-count',null,c.abx.length+' antibiotics ℞');
+  head.appendChild(countSpan);
+  card.appendChild(head);
+
+  const body=mk('div','ccard-body',`background:rgba(255,242,241,0.4);`);
+  body.appendChild(mk('div','drug-sec-label',`color:${acc};`,`Antibiotics — Prescription Required ℞`));
+
+  c.abx.forEach(m=>{
+    const row=mk('div','rxdrug-row');
+    row.appendChild(mk('span','rx-marker',`background:${acc};`,`℞`));
+    const mc=mk('div');
+    mc.appendChild(mk('div','rxd-name',null,m[0]));
+    mc.appendChild(mk('div','rxd-dose',null,m[1]));
+    mc.appendChild(mk('div','rxd-info',null,m[2]));
+    mc.appendChild(mk('span','rxd-tag',`border-color:${acc}40;color:${acc};background:${acc}10;`,m[3]));
+    row.appendChild(mc);
+    body.appendChild(row);
+  });
+
+  card.appendChild(body);
+  rxGrid.appendChild(card);
+});
+
+// ── SEARCH FILTER ─────────────────────────────────────────────────────────────
+const searchInput   = document.getElementById('search-input');
+const searchClear   = document.getElementById('search-clear');
+const resultsWrap   = document.getElementById('results-wrap');
+const resultsGrid   = document.getElementById('results-grid');
+const resultsCount  = document.getElementById('results-count');
+const resultsPlural = document.getElementById('results-plural');
+const searchEmpty   = document.getElementById('search-empty');
+const otcWrap       = document.querySelector('.otc-wrap');
+const rxWrap        = document.querySelector('.rx-wrap');
+
+function cardMatches(data, query) {
+  if (data.includes(query)) return true;
+  const qWords = query.split(/\s+/).filter(w => w.length >= 3);
+  if (!qWords.length) return false;
+  const dWords = data.split(/\W+/);
+  return qWords.every(qw =>
+    dWords.some(dw => {
+      if (dw.startsWith(qw)) return true;
+      let shared = 0;
+      const max = Math.min(qw.length, dw.length);
+      while (shared < max && qw[shared] === dw[shared]) shared++;
+      return shared >= 5;
+    })
+  );
+}
+
+searchInput.addEventListener('input', function () {
+  const q = this.value.trim().toLowerCase();
+  searchClear.style.display = q ? 'block' : 'none';
+
+  if (!q) {
+    resultsWrap.style.display = 'none';
+    resultsGrid.innerHTML = '';
+    otcWrap.style.display = '';
+    rxWrap.style.display  = '';
+    searchEmpty.style.display = 'none';
+    return;
+  }
+
+  const allCards = document.querySelectorAll('#otc-grid .ccard, #rx-grid .ccard');
+  const hits = [];
+  allCards.forEach(card => {
+    if (cardMatches(card.dataset.search, q)) hits.push(card);
+  });
+
+  resultsGrid.innerHTML = '';
+  hits.forEach(card => resultsGrid.appendChild(card.cloneNode(true)));
+
+  resultsCount.textContent = hits.length;
+  resultsPlural.textContent = hits.length === 1 ? '' : 's';
+  searchEmpty.style.display = hits.length === 0 ? 'block' : 'none';
+
+  otcWrap.style.display = 'none';
+  rxWrap.style.display  = 'none';
+  resultsWrap.style.display = 'block';
+});
+
+searchClear.addEventListener('click', function () {
+  searchInput.value = '';
+  searchInput.dispatchEvent(new Event('input'));
+  searchInput.focus();
+});
+</script>
+</body>
+</html>

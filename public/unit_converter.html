@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Unit Converter</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f4f0;min-height:100vh;display:flex;justify-content:center;padding:2rem 1rem}
+  .page{width:100%;max-width:720px}
+  .header{margin-bottom:1.75rem}
+  .header h1{font-size:24px;font-weight:500;color:#1a1a1a;margin-bottom:4px}
+  .header p{font-size:14px;color:#888}
+  .cats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.75rem}
+  .cat-btn{padding:7px 16px;font-size:13px;border:1px solid #ddd;border-radius:20px;cursor:pointer;background:#fff;color:#666;transition:all .2s;font-family:inherit}
+  .cat-btn:hover{border-color:#aaa;color:#1a1a1a}
+  .cat-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  .converter-card{background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:1.75rem;margin-bottom:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .converter-row{display:grid;grid-template-columns:1fr 48px 1fr;align-items:stretch;gap:0}
+  .field{display:flex;flex-direction:column}
+  .field label{font-size:10px;font-weight:600;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+  .field select{width:100%;padding:9px 28px 9px 12px;font-size:14px;border:1px solid #e5e5e5;border-radius:10px;background:#f9f9f7;color:#1a1a1a;cursor:pointer;font-family:inherit;margin-bottom:10px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aaa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+  .field select:focus{outline:none;border-color:#aaa}
+  .big-input{width:100%;font-size:28px;font-weight:500;padding:14px 16px;border:1px solid #e5e5e5;border-radius:10px;background:#fff;color:#1a1a1a;font-family:inherit;transition:border-color .2s}
+  .big-input:focus{outline:none;border-color:#aaa}
+  .big-input[readonly]{background:#f9f9f7;color:#1a1a1a;cursor:default;border-color:#efefef}
+  .divider{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:30px}
+  .swap-btn{width:36px;height:36px;border-radius:50%;border:1px solid #e5e5e5;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#888;transition:all .2s;font-family:inherit}
+  .swap-btn:hover{background:#f5f5f5;color:#1a1a1a;border-color:#ccc}
+  .section-label{font-size:10px;font-weight:600;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:8px}
+  .card{background:#fff;border:1px solid #efefef;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+  .card:hover{border-color:#ddd;background:#fafaf8}
+  .card.highlighted{border-color:#ccc;background:#fafaf8}
+  .card.highlighted::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#1a1a1a;border-radius:3px 0 0 3px}
+  .card .unit-name{font-size:11px;color:#aaa;margin-bottom:5px}
+  .card .unit-val{font-size:15px;font-weight:500;color:#1a1a1a}
+  .card .unit-sym{font-size:11px;font-weight:400;color:#aaa;margin-left:2px}
+  .copied-tag{position:absolute;top:8px;right:10px;font-size:10px;color:#888;opacity:0;transition:opacity .2s;background:#f0f0ee;padding:2px 6px;border-radius:10px}
+  .card.show-copied .copied-tag{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <h1>Unit converter</h1>
+    <p>Select a category and type a value to convert</p>
+  </div>
+
+  <div class="cats" id="cats"></div>
+
+  <div class="converter-card">
+    <div class="converter-row">
+      <div class="field">
+        <label>From</label>
+        <select id="fromUnit"></select>
+        <input class="big-input" type="number" id="inputVal" placeholder="0" value="1" />
+      </div>
+      <div class="divider">
+        <button class="swap-btn" onclick="swapUnits()" title="Swap units">⇄</button>
+      </div>
+      <div class="field">
+        <label>To</label>
+        <select id="toUnit"></select>
+        <input class="big-input" type="text" id="outputVal" readonly placeholder="—" />
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">All conversions — click any to copy</div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const cats={
+  Land:{
+    units:["sq ft","sq yd (Vaar/Gaj)","sq meter","Are","Guntha","Cent","Decimal","Acre","Hectare","sq km","Bigha (approx.)"],
+    toBase:{
+      "sq ft":0.092903,
+      "sq yd (Vaar/Gaj)":0.836127,
+      "sq meter":1,
+      "Are":100,
+      "Guntha":101.17,
+      "Cent":40.47,
+      "Decimal":40.47,
+      "Acre":4046.86,
+      "Hectare":10000,
+      "sq km":1000000,
+      "Bigha (approx.)":1618.74
+    },
+    sym:{
+      "sq ft":"ft²",
+      "sq yd (Vaar/Gaj)":"yd²",
+      "sq meter":"m²",
+      "Are":"are",
+      "Guntha":"Gth",
+      "Cent":"Cent",
+      "Decimal":"Dec",
+      "Acre":"ac",
+      "Hectare":"ha",
+      "sq km":"km²",
+      "Bigha (approx.)":"Bigha"
+    }
+  },
+  Length:{units:["millimeter","centimeter","meter","kilometer","inch","foot","yard","mile","nautical mile","micrometer","nanometer"],toBase:{millimeter:1e-3,centimeter:1e-2,meter:1,kilometer:1e3,inch:0.0254,foot:0.3048,yard:0.9144,mile:1609.344,"nautical mile":1852,micrometer:1e-6,nanometer:1e-9},sym:{millimeter:"mm",centimeter:"cm",meter:"m",kilometer:"km",inch:"in",foot:"ft",yard:"yd",mile:"mi","nautical mile":"NM",micrometer:"μm",nanometer:"nm"}},
+  Weight:{units:["milligram","gram","kilogram","tonne","ounce","pound","stone","US ton","microgram"],toBase:{milligram:1e-6,gram:1e-3,kilogram:1,tonne:1e3,ounce:0.0283495,pound:0.453592,stone:6.35029,"US ton":907.185,microgram:1e-9},sym:{milligram:"mg",gram:"g",kilogram:"kg",tonne:"t",ounce:"oz",pound:"lb",stone:"st","US ton":"ton",microgram:"μg"}},
+  Temperature:{units:["Celsius","Fahrenheit","Kelvin"],special:true,sym:{Celsius:"°C",Fahrenheit:"°F",Kelvin:"K"}},
+  Volume:{units:["milliliter","liter","cubic meter","teaspoon","tablespoon","fluid ounce","cup","pint","quart","gallon","cubic inch","cubic foot"],toBase:{milliliter:1e-3,liter:1,"cubic meter":1000,teaspoon:0.00492892,tablespoon:0.0147868,"fluid ounce":0.0295735,cup:0.236588,pint:0.473176,quart:0.946353,gallon:3.78541,"cubic inch":0.0163871,"cubic foot":28.3168},sym:{milliliter:"mL",liter:"L","cubic meter":"m³",teaspoon:"tsp",tablespoon:"tbsp","fluid ounce":"fl oz",cup:"cup",pint:"pt",quart:"qt",gallon:"gal","cubic inch":"in³","cubic foot":"ft³"}},
+  Area:{units:["sq mm","sq cm","sq meter","sq km","sq inch","sq foot","sq yard","acre","hectare","sq mile"],toBase:{"sq mm":1e-6,"sq cm":1e-4,"sq meter":1,"sq km":1e6,"sq inch":6.4516e-4,"sq foot":0.092903,"sq yard":0.836127,acre:4046.86,hectare:1e4,"sq mile":2589988},sym:{"sq mm":"mm²","sq cm":"cm²","sq meter":"m²","sq km":"km²","sq inch":"in²","sq foot":"ft²","sq yard":"yd²",acre:"ac",hectare:"ha","sq mile":"mi²"}},
+  Speed:{units:["m/s","km/h","mph","knot","ft/s","Mach"],toBase:{"m/s":1,"km/h":1/3.6,mph:0.44704,knot:0.514444,"ft/s":0.3048,Mach:343},sym:{"m/s":"m/s","km/h":"km/h",mph:"mph",knot:"kn","ft/s":"ft/s",Mach:"Ma"}},
+  Time:{units:["nanosecond","microsecond","millisecond","second","minute","hour","day","week","month","year"],toBase:{nanosecond:1e-9,microsecond:1e-6,millisecond:1e-3,second:1,minute:60,hour:3600,day:86400,week:604800,month:2628000,year:31536000},sym:{nanosecond:"ns",microsecond:"μs",millisecond:"ms",second:"s",minute:"min",hour:"hr",day:"d",week:"wk",month:"mo",year:"yr"}},
+  Pressure:{units:["pascal","kilopascal","bar","psi","atm","mmHg","torr"],toBase:{pascal:1,kilopascal:1000,bar:1e5,psi:6894.76,atm:101325,mmHg:133.322,torr:133.322},sym:{pascal:"Pa",kilopascal:"kPa",bar:"bar",psi:"psi",atm:"atm",mmHg:"mmHg",torr:"torr"}},
+  Energy:{units:["joule","kilojoule","calorie","kilocalorie","watt-hour","kilowatt-hour","BTU","electronvolt"],toBase:{joule:1,kilojoule:1e3,calorie:4.184,kilocalorie:4184,"watt-hour":3600,"kilowatt-hour":3.6e6,BTU:1055.06,electronvolt:1.60218e-19},sym:{joule:"J",kilojoule:"kJ",calorie:"cal",kilocalorie:"kcal","watt-hour":"Wh","kilowatt-hour":"kWh",BTU:"BTU",electronvolt:"eV"}}
+};
+
+let activeCat="Land";
+
+function fmt(n){
+  if(n===null||isNaN(n))return"—";
+  if(n===0)return"0";
+  if(Math.abs(n)>=0.0001&&Math.abs(n)<1e10)return parseFloat(n.toPrecision(7)).toString();
+  return n.toExponential(4);
+}
+
+function getVal(from,to,val){
+  const c=cats[activeCat];
+  if(isNaN(val))return NaN;
+  if(c.special){
+    if(from===to)return val;
+    if(from==="Celsius")return to==="Fahrenheit"?val*9/5+32:val+273.15;
+    if(from==="Fahrenheit")return to==="Celsius"?(val-32)*5/9:(val-32)*5/9+273.15;
+    if(from==="Kelvin")return to==="Celsius"?val-273.15:(val-273.15)*9/5+32;
+  }
+  return val*c.toBase[from]/c.toBase[to];
+}
+
+function getAllConversions(from,val){
+  const c=cats[activeCat];
+  if(c.special)return c.units.map(u=>({unit:u,sym:c.sym[u],val:getVal(from,u,val)}));
+  const base=val*c.toBase[from];
+  return c.units.map(u=>({unit:u,sym:c.sym[u]||u,val:base/c.toBase[u]}));
+}
+
+function renderCats(){
+  document.getElementById("cats").innerHTML=Object.keys(cats).map(k=>
+    `<button class="cat-btn${k===activeCat?" active":""}" onclick="setCat('${k}')">${k}</button>`
+  ).join("");
+}
+
+function populateSelects(fv,tv){
+  const c=cats[activeCat];
+  const opts=c.units.map(u=>`<option value="${u}">${c.sym[u]||u} — ${u}</option>`).join("");
+  const fs=document.getElementById("fromUnit"),ts=document.getElementById("toUnit");
+  fs.innerHTML=opts;ts.innerHTML=opts;
+  fs.value=fv||c.units[0];ts.value=tv||(c.units[2]||c.units[1]);
+}
+
+function update(){
+  const from=document.getElementById("fromUnit").value;
+  const to=document.getElementById("toUnit").value;
+  const val=parseFloat(document.getElementById("inputVal").value);
+  document.getElementById("outputVal").value=isNaN(val)?"":fmt(getVal(from,to,val));
+  renderGrid(from,val);
+}
+
+function renderGrid(from,val){
+  const to=document.getElementById("toUnit").value;
+  const results=isNaN(val)?[]:getAllConversions(from,val);
+  document.getElementById("grid").innerHTML=results.map(r=>
+    `<div class="card${r.unit===to?" highlighted":""}" onclick="copyCard(this,'${r.val}')">
+      <div class="unit-name">${r.unit}</div>
+      <div class="unit-val">${fmt(r.val)}<span class="unit-sym">${r.sym}</span></div>
+      <span class="copied-tag">copied</span>
+    </div>`
+  ).join("");
+}
+
+function setCat(c){
+  activeCat=c;
+  const cat=cats[c];
+  renderCats();
+  populateSelects(cat.units[0],cat.units[2]||cat.units[1]);
+  document.getElementById("inputVal").value="1";
+  update();
+}
+
+function swapUnits(){
+  const fs=document.getElementById("fromUnit"),ts=document.getElementById("toUnit");
+  const tmp=fs.value;fs.value=ts.value;ts.value=tmp;
+  update();
+}
+
+function copyCard(card,v){
+  navigator.clipboard.writeText(v).catch(()=>{});
+  card.classList.add("show-copied");
+  setTimeout(()=>card.classList.remove("show-copied"),1200);
+}
+
+document.getElementById("fromUnit").addEventListener("change",update);
+document.getElementById("toUnit").addEventListener("change",update);
+document.getElementById("inputVal").addEventListener("input",update);
+
+renderCats();
+populateSelects("sq ft","Acre");
+document.getElementById("inputVal").value="1";
+update();
+</script>
+</body>
+</html>

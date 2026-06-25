@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XRay Identifier — Radiological Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #EDF0F5;
+      --surface:      #FFFFFF;
+      --surface2:     #F8FAFC;
+      --surface3:     #F1F5F9;
+      --border:       #E2E8F0;
+      --border2:      #CBD5E1;
+      --accent:       #0D9488;
+      --accent-light: #CCFBF4;
+      --accent-dark:  #0A7A6F;
+      --warn:         #B45309;
+      --warn-light:   #FEF3C7;
+      --danger:       #B91C1C;
+      --danger-light: #FEE2E2;
+      --text:         #0F172A;
+      --text-dim:     #334155;
+      --text-muted:   #64748B;
+      --normal:       #0D9488;
+      --moderate:     #B45309;
+      --high:         #B91C1C;
+      --shadow-sm:    0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.04);
+      --shadow-md:    0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.05);
+      --shadow-lg:    0 10px 24px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
+    }
+
+    html { font-size: 15px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+      background: #FEF2F2;
+      border-bottom: 1px solid #FECACA;
+      padding: 9px 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: #7F1D1D;
+      line-height: 1.5;
+    }
+    .disclaimer-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .disclaimer strong { color: #991B1B; font-weight: 600; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+    .logo-title span { color: var(--accent); }
+    .logo-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-top: 1px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--accent-light);
+      border: 1px solid #99F6E4;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent-dark);
+      letter-spacing: 0.04em;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(0.85)} }
+
+    /* ── LAYOUT ── */
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      height: calc(100vh - 93px);
+      overflow: hidden;
+    }
+
+    /* ── VIEWER (LEFT) ── */
+    .viewer {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .viewer-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toolbar-divider {
+      width: 1px; height: 20px;
+      background: var(--border2);
+      margin: 0 4px;
+    }
+    .toolbar-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .spacer { flex: 1; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: 7px;
+      border: 1.5px solid var(--border2);
+      background: var(--surface);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+    .btn.active {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(13,148,136,0.3);
+    }
+    .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn.ghost {
+      border-color: transparent;
+      background: transparent;
+      color: var(--text-muted);
+    }
+    .btn.ghost:hover { background: var(--surface3); color: var(--danger); border-color: var(--border); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    /* ── VIEWER BODY ── */
+    .viewer-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      overflow: auto;
+    }
+
+    /* ── DROP ZONE ── */
+    .dropzone {
+      width: 100%;
+      max-width: 640px;
+      aspect-ratio: 4/3;
+      border: 2px dashed var(--border2);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface);
+      position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      box-shadow: 0 0 0 4px rgba(13,148,136,0.1);
+    }
+    .dropzone input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer;
+    }
+    .dropzone-icon {
+      font-size: 3.5rem;
+      opacity: 0.25;
+    }
+    .dropzone-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .dropzone-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+    .dropzone-hint {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    /* ── CANVAS ── */
+    .canvas-wrapper {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+    }
+    #imageCanvas { display: block; max-width: 100%; }
+    #overlayCanvas {
+      position: absolute; top: 0; left: 0;
+      pointer-events: none;
+    }
+    .loading-overlay {
+      display: none;
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(3px);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 10;
+      border-radius: 10px;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 38px; height: 38px;
+      border: 3px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-dark);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── RIGHT PANEL ── */
+    .panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    /* ── ANALYZE SECTION ── */
+    .analyze-section {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .analyze-info {
+      flex: 1;
+    }
+    .analyze-title {
+      font-size: 0.87rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .analyze-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      display: none;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .stats-strip.visible { display: flex; }
+    .stat-cell {
+      flex: 1;
+      padding: 10px 16px;
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+    .stat-key {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    /* ── ASSESSMENT CARD ── */
+    .assessment-section {
+      display: none;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .assessment-section.visible { display: block; }
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .assessment-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .assessment-type {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .assessment-text {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+    .severity-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .severity-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+    }
+    .severity-dot.normal   { background: var(--normal); }
+    .severity-dot.moderate { background: var(--moderate); }
+    .severity-dot.high     { background: var(--high); }
+    .severity-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── FINDINGS BODY ── */
+    .findings-body {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .findings-body::-webkit-scrollbar { width: 5px; }
+    .findings-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    .findings-body::-webkit-scrollbar-track { background: transparent; }
+
+    /* ── SOURCE BADGE ── */
+    .source-row {
+      padding: 10px 18px 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .source-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+    .source-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+    }
+    .source-badge.local {
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      border: 1px solid #99F6E4;
+    }
+    .source-badge.ai {
+      background: #EDE9FE;
+      color: #5B21B6;
+      border: 1px solid #C4B5FD;
+    }
+
+    /* ── FINDING ITEM ── */
+    .finding-item {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+      position: relative;
+    }
+    .finding-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+    }
+    .finding-item.sev-normal::before   { background: var(--normal); }
+    .finding-item.sev-moderate::before { background: var(--moderate); }
+    .finding-item.sev-high::before     { background: var(--high); }
+    .finding-item:hover { background: var(--surface2); }
+
+    .finding-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+    .finding-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+    }
+    .finding-region {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+      line-height: 1.3;
+    }
+    .sev-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 2px 8px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+    .sev-badge.normal   { background: #CCFBF4; color: #065F46; }
+    .sev-badge.moderate { background: #FEF3C7; color: #78350F; }
+    .sev-badge.high     { background: #FEE2E2; color: #7F1D1D; }
+
+    .finding-text {
+      font-size: 0.81rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+      padding-left: 32px;
+    }
+
+    /* ── RECOMMENDATIONS ── */
+    .rec-section {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .rec-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .rec-text {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .empty-icon { font-size: 3rem; opacity: 0.2; }
+    .empty-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .empty-sub {
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 240px;
+    }
+
+    /* ── PANEL FOOTER ── */
+    .panel-footer {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .panel-footer .btn { width: 100%; justify-content: center; }
+
+    /* ── ERROR TOAST ── */
+    #errorToast {
+      position: fixed;
+      bottom: 22px; right: 22px;
+      background: #fff;
+      border: 1.5px solid #FECACA;
+      border-left: 4px solid var(--danger);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: #7F1D1D;
+      max-width: 340px;
+      z-index: 1000;
+      display: none;
+      box-shadow: var(--shadow-md);
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(8px); opacity: 0; }
+      to   { transform: translateY(0);   opacity: 1; }
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <span class="disclaimer-icon">⚠️</span>
+    <span>
+      <strong>Medical Disclaimer:</strong> This tool is for informational and educational purposes only.
+      It is <strong>not a substitute for professional medical advice, diagnosis, or treatment.</strong>
+      Always consult a qualified radiologist or physician for any medical decisions.
+    </span>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="logo-title">X<span>Ray</span> Identifier</div>
+      <div class="logo-sub">Radiological Analysis System</div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        Hybrid · Local + AI
+      </div>
+    </div>
+  </header>
+
+  <!-- APP -->
+  <div class="app">
+
+    <!-- LEFT: VIEWER -->
+    <div class="viewer">
+      <div class="viewer-toolbar">
+        <span class="toolbar-label">Overlay</span>
+        <button class="btn active" id="btnBoxes" onclick="setOverlay('boxes')">
+          ⬛ Bounding Boxes
+        </button>
+        <button class="btn" id="btnHeat" onclick="setOverlay('heatmap')">
+          🌡 Heatmap
+        </button>
+        <div class="toolbar-divider"></div>
+        <div class="spacer"></div>
+        <button class="btn ghost" id="btnClear" onclick="clearAll()" disabled>
+          ✕ Clear
+        </button>
+      </div>
+
+      <div class="viewer-body" id="viewerBody">
+
+        <!-- DROP ZONE -->
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">🩻</div>
+          <div class="dropzone-title">Drop your X-Ray here</div>
+          <div class="dropzone-sub">Supports JPG · PNG · WEBP · BMP</div>
+          <div class="dropzone-hint">
+            📂 Or click anywhere to browse files
+          </div>
+          <input type="file" id="fileInput" accept="image/*" />
+        </div>
+
+        <!-- CANVAS VIEWER -->
+        <div class="canvas-wrapper" id="canvasWrapper" style="display:none;">
+          <canvas id="imageCanvas"></canvas>
+          <canvas id="overlayCanvas"></canvas>
+          <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+            <div class="loading-label" id="loadingText">ANALYZING WITH LLAMA 4 SCOUT…</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: FINDINGS PANEL -->
+    <div class="panel">
+
+      <!-- ANALYZE BUTTON -->
+      <div class="analyze-section">
+        <div class="analyze-info">
+          <div class="analyze-title">AI Analysis</div>
+          <div class="analyze-sub">Local scan runs on upload. Click Analyze for full AI-powered findings via Groq.</div>
+        </div>
+        <button class="btn primary" id="btnAnalyze" onclick="runGroqAnalysis()" disabled>
+          ▶ Analyze
+        </button>
+      </div>
+
+      <!-- STATS STRIP -->
+      <div class="stats-strip" id="statsStrip">
+        <div class="stat-cell">
+          <div class="stat-val" id="statFindings">—</div>
+          <div class="stat-key">Findings</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-val" id="statSeverity">—</div>
+          <div class="stat-key">Max Severity</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-val" id="statMode">—</div>
+          <div class="stat-key">Mode</div>
+        </div>
+      </div>
+
+      <!-- ASSESSMENT -->
+      <div class="assessment-section" id="assessmentSection">
+        <div class="section-label">Overall Assessment</div>
+        <div class="assessment-card">
+          <div class="assessment-type" id="xrayType">X-RAY TYPE</div>
+          <div class="assessment-text" id="assessmentText">—</div>
+          <div class="severity-row">
+            <span class="severity-dot" id="severityDot"></span>
+            <span class="severity-label" id="severityLabel">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINDINGS LIST -->
+      <div class="findings-body" id="findingsBody">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">🩻</div>
+          <div class="empty-title">No image loaded</div>
+          <div class="empty-sub">Upload an X-Ray to begin. Local analysis starts immediately.</div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="panel-footer">
+        <button class="btn" id="btnPDF" onclick="generatePDF()" disabled>
+          ⬇ Download PDF Report
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="errorToast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let currentImage   = null;
+let currentImgSrc  = null;
+let analysisResult = null;
+let overlayMode    = 'boxes';
+let findings       = [];
+let analysisMode   = 'none';
+
+// ═══════════════════════════════════════
+//  DOM REFS
+// ═══════════════════════════════════════
+const dropzone      = document.getElementById('dropzone');
+const fileInput     = document.getElementById('fileInput');
+const canvasWrapper = document.getElementById('canvasWrapper');
+const imageCanvas   = document.getElementById('imageCanvas');
+const overlayCanvas = document.getElementById('overlayCanvas');
+const ctx           = imageCanvas.getContext('2d');
+const octx          = overlayCanvas.getContext('2d');
+const loadingOverlay= document.getElementById('loadingOverlay');
+const loadingText   = document.getElementById('loadingText');
+const findingsBody  = document.getElementById('findingsBody');
+const emptyState    = document.getElementById('emptyState');
+const statsStrip    = document.getElementById('statsStrip');
+
+// ═══════════════════════════════════════
+//  FILE HANDLING
+// ═══════════════════════════════════════
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadImageFile(f);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadImageFile(e.target.files[0]);
+});
+
+function loadImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentImgSrc = ev.target.result;
+    const img = new Image();
+    img.onload = () => {
+      currentImage = img;
+      drawImage();
+      runLocalAnalysis();
+      document.getElementById('btnAnalyze').disabled = false;
+      document.getElementById('btnClear').disabled   = false;
+      document.getElementById('btnPDF').disabled     = false;
+    };
+    img.src = currentImgSrc;
+  };
+  reader.readAsDataURL(file);
+}
+
+function drawImage() {
+  const body   = document.getElementById('viewerBody');
+  const maxW   = body.clientWidth  - 56;
+  const maxH   = body.clientHeight - 56;
+  const scale  = Math.min(maxW / currentImage.width, maxH / currentImage.height, 1);
+  imageCanvas.width  = Math.round(currentImage.width  * scale);
+  imageCanvas.height = Math.round(currentImage.height * scale);
+  overlayCanvas.width  = imageCanvas.width;
+  overlayCanvas.height = imageCanvas.height;
+  ctx.drawImage(currentImage, 0, 0, imageCanvas.width, imageCanvas.height);
+  dropzone.style.display     = 'none';
+  canvasWrapper.style.display = 'inline-block';
+}
+
+function clearAll() {
+  currentImage   = null;
+  currentImgSrc  = null;
+  analysisResult = null;
+  findings       = [];
+  analysisMode   = 'none';
+  dropzone.style.display      = '';
+  canvasWrapper.style.display = 'none';
+  ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+  octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  document.getElementById('btnAnalyze').disabled = true;
+  document.getElementById('btnClear').disabled   = true;
+  document.getElementById('btnPDF').disabled     = true;
+  statsStrip.classList.remove('visible');
+  document.getElementById('assessmentSection').classList.remove('visible');
+  findingsBody.innerHTML = '';
+  findingsBody.appendChild(emptyState);
+  emptyState.style.display = 'flex';
+  fileInput.value = '';
+}
+
+// ═══════════════════════════════════════
+//  OVERLAY MODE
+// ═══════════════════════════════════════
+function setOverlay(mode) {
+  overlayMode = mode;
+  document.getElementById('btnBoxes').classList.toggle('active', mode === 'boxes');
+  document.getElementById('btnHeat').classList.toggle('active',  mode === 'heatmap');
+  if (findings.length) renderOverlay();
+}
+
+// ═══════════════════════════════════════
+//  LOCAL ANALYSIS
+// ═══════════════════════════════════════
+function runLocalAnalysis() {
+  const W = imageCanvas.width, H = imageCanvas.height;
+  const px = ctx.getImageData(0, 0, W, H).data;
+
+  const COLS = 4, ROWS = 4;
+  const cW = Math.floor(W / COLS), cH = Math.floor(H / ROWS);
+  const cells = [];
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      let sum = 0, cnt = 0;
+      for (let y = r*cH; y < Math.min((r+1)*cH, H); y++) {
+        for (let x = c*cW; x < Math.min((c+1)*cW, W); x++) {
+          const i = (y*W+x)*4;
+          sum += 0.299*px[i] + 0.587*px[i+1] + 0.114*px[i+2];
+          cnt++;
+        }
+      }
+      cells.push({ r, c, avg: sum/cnt, x: c*cW, y: r*cH, w: cW, h: cH });
+    }
+  }
+
+  const mean = cells.reduce((s,c)=>s+c.avg,0)/cells.length;
+  const std  = Math.sqrt(cells.reduce((s,c)=>s+Math.pow(c.avg-mean,2),0)/cells.length);
+  const bright = cells.filter(c => c.avg > mean + std*0.9);
+  const dark   = cells.filter(c => c.avg < mean - std*0.9);
+  const local  = [];
+
+  if (bright.length) {
+    local.push({
+      type: 'local', region: 'High-Density Region(s)',
+      finding: `${bright.length} zone(s) with elevated radiodensity (avg ${Math.round(bright.reduce((s,b)=>s+b.avg,0)/bright.length)}/255). May indicate bone, calcification, or dense soft tissue.`,
+      severity: bright.some(b=>b.avg>210) ? 'moderate' : 'normal',
+      boxes: bright.map(b=>({x:b.x, y:b.y, w:b.w, h:b.h}))
+    });
+  }
+  if (dark.length) {
+    local.push({
+      type: 'local', region: 'Low-Density Region(s)',
+      finding: `${dark.length} zone(s) with reduced radiodensity (avg ${Math.round(dark.reduce((s,d)=>s+d.avg,0)/dark.length)}/255). May indicate air spaces (lungs), soft tissue, or fluid.`,
+      severity: 'normal',
+      boxes: dark.map(d=>({x:d.x, y:d.y, w:d.w, h:d.h}))
+    });
+  }
+  local.push({
+    type: 'stats', region: 'Image Quality Metrics',
+    finding: `Dimensions: ${currentImage.width}×${currentImage.height}px · Mean brightness: ${Math.round(mean)}/255 · Contrast (σ/μ): ${(std/mean).toFixed(3)} · Cells analysed: ${cells.length}`,
+    severity: 'normal', boxes: []
+  });
+
+  findings     = local;
+  analysisMode = 'local';
+  renderFindings();
+  renderOverlay();
+}
+
+// ═══════════════════════════════════════
+//  GROQ ANALYSIS — via /api/analyze proxy
+// ═══════════════════════════════════════
+async function runGroqAnalysis() {
+  if (!currentImage) { showError('Upload an X-Ray image first.'); return; }
+
+  setLoading(true, 'ANALYZING WITH LLAMA 4 SCOUT…');
+  try {
+    const scale = Math.min(1024 / imageCanvas.width, 1);
+    const tmp   = document.createElement('canvas');
+    tmp.width   = Math.round(imageCanvas.width  * scale);
+    tmp.height  = Math.round(imageCanvas.height * scale);
+    tmp.getContext('2d').drawImage(imageCanvas, 0, 0, tmp.width, tmp.height);
+    const b64 = tmp.toDataURL('image/jpeg', 0.85).split(',')[1];
+
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_base64: b64 })
+    });
+
+    const parsed = await res.json();
+    if (!res.ok) throw new Error(parsed.error || `Server error ${res.status}`);
+
+    analysisResult = parsed;
+    findings = (parsed.findings || []).map(f => ({
+      type: 'groq',
+      region:   f.region,
+      finding:  f.finding,
+      severity: f.severity || 'normal',
+      zone:     f.zone || 'center',
+      boxes:    [getZoneRect(f.zone || 'center')]
+    }));
+    analysisMode = 'groq';
+    renderFindings(parsed);
+    renderOverlay();
+
+  } catch(err) {
+    showError(`Analysis error: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ═══════════════════════════════════════
+//  ZONE → RECT
+// ═══════════════════════════════════════
+function getZoneRect(zone) {
+  const W = imageCanvas.width, H = imageCanvas.height;
+  const m = {
+    'top-left':      {x:0,     y:0,     w:W*.48, h:H*.42},
+    'top-right':     {x:W*.52, y:0,     w:W*.48, h:H*.42},
+    'top-center':    {x:W*.2,  y:0,     w:W*.6,  h:H*.40},
+    'center-left':   {x:0,     y:H*.28, w:W*.46, h:H*.44},
+    'center':        {x:W*.2,  y:H*.2,  w:W*.6,  h:H*.6 },
+    'center-right':  {x:W*.54, y:H*.28, w:W*.46, h:H*.44},
+    'bottom-left':   {x:0,     y:H*.58, w:W*.48, h:H*.42},
+    'bottom-center': {x:W*.2,  y:H*.6,  w:W*.6,  h:H*.40},
+    'bottom-right':  {x:W*.52, y:H*.58, w:W*.48, h:H*.42},
+    'full':          {x:4,     y:4,     w:W-8,   h:H-8  }
+  };
+  return m[zone] || m['center'];
+}
+
+// ═══════════════════════════════════════
+//  RENDER FINDINGS
+// ═══════════════════════════════════════
+function renderFindings(groqData) {
+  emptyState.style.display = 'none';
+
+  // Stats
+  statsStrip.classList.add('visible');
+  const sevRank  = {normal:0, moderate:1, high:2};
+  const maxSev   = findings.reduce((m,f)=>(sevRank[f.severity]||0)>(sevRank[m]||0)?f.severity:m, 'normal');
+  const sevColor = {normal:getComputedStyle(document.documentElement).getPropertyValue('--normal'),
+                    moderate:getComputedStyle(document.documentElement).getPropertyValue('--moderate'),
+                    high:getComputedStyle(document.documentElement).getPropertyValue('--high')};
+  document.getElementById('statFindings').textContent = findings.length;
+  document.getElementById('statSeverity').textContent = maxSev.charAt(0).toUpperCase()+maxSev.slice(1);
+  document.getElementById('statSeverity').style.color = (maxSev==='high'?'#B91C1C':maxSev==='moderate'?'#B45309':'#0D9488');
+  document.getElementById('statMode').textContent     = analysisMode==='groq'?'AI':'Local';
+  document.getElementById('statMode').style.color     = analysisMode==='groq'?'#5B21B6':'#0D9488';
+
+  // Assessment
+  const aSection = document.getElementById('assessmentSection');
+  if (groqData) {
+    aSection.classList.add('visible');
+    document.getElementById('xrayType').textContent    = (groqData.xray_type||'').toUpperCase() + ' X-RAY';
+    document.getElementById('assessmentText').textContent = groqData.overall_assessment || '';
+    const sev = groqData.overall_severity || 'normal';
+    document.getElementById('severityDot').className  = `severity-dot ${sev}`;
+    document.getElementById('severityLabel').textContent = 'Overall: ' + sev.charAt(0).toUpperCase()+sev.slice(1);
+    document.getElementById('severityLabel').style.color = sev==='high'?'#B91C1C':sev==='moderate'?'#B45309':'#0D9488';
+  } else {
+    aSection.classList.remove('visible');
+  }
+
+  // List
+  const frag = document.createDocumentFragment();
+
+  // Source badge
+  const sourceRow = document.createElement('div');
+  sourceRow.className = 'source-row';
+  sourceRow.innerHTML = `
+    <span class="source-label">Source</span>
+    <span class="source-badge ${analysisMode==='groq'?'ai':'local'}">
+      ${analysisMode==='groq'?'⚡ AI Analysis':'📊 Local Canvas Analysis'}
+    </span>`;
+  frag.appendChild(sourceRow);
+
+  findings.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = `finding-item sev-${f.severity}`;
+    item.onclick   = () => highlightFinding(i);
+    item.innerHTML = `
+      <div class="finding-header">
+        <span class="finding-num">${String(i+1).padStart(2,'0')}</span>
+        <span class="finding-region">${escHtml(f.region)}</span>
+        <span class="sev-badge ${f.severity}">${f.severity.charAt(0).toUpperCase()+f.severity.slice(1)}</span>
+      </div>
+      <div class="finding-text">${escHtml(f.finding)}</div>`;
+    frag.appendChild(item);
+  });
+
+  // Recommendations
+  if (groqData?.recommendations) {
+    const rec = document.createElement('div');
+    rec.className = 'rec-section';
+    rec.innerHTML = `
+      <div class="rec-title">Recommendations</div>
+      <div class="rec-text">${escHtml(groqData.recommendations)}</div>`;
+    frag.appendChild(rec);
+  }
+
+  findingsBody.innerHTML = '';
+  findingsBody.appendChild(frag);
+}
+
+function highlightFinding(idx) {
+  if (!findings[idx]?.boxes?.length) return;
+  renderOverlay();
+  const f   = findings[idx];
+  const col = {normal:'#0D9488', moderate:'#B45309', high:'#B91C1C'}[f.severity] || '#0D9488';
+  f.boxes.forEach(b => {
+    if (!b) return;
+    octx.strokeStyle = '#fff';
+    octx.lineWidth   = 4;
+    octx.setLineDash([]);
+    octx.strokeRect(b.x, b.y, b.w, b.h);
+    octx.strokeStyle = col;
+    octx.lineWidth   = 2.5;
+    octx.strokeRect(b.x+1, b.y+1, b.w-2, b.h-2);
+  });
+}
+
+// ═══════════════════════════════════════
+//  OVERLAY
+// ═══════════════════════════════════════
+function renderOverlay() {
+  octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  if (overlayMode === 'boxes') renderBoundingBoxes();
+  else renderHeatmap();
+}
+
+function renderBoundingBoxes() {
+  const pal = {
+    normal:   {stroke:'#0D9488', fill:'rgba(13,148,136,0.08)'},
+    moderate: {stroke:'#B45309', fill:'rgba(180,83,9,0.08)'},
+    high:     {stroke:'#B91C1C', fill:'rgba(185,28,28,0.08)'}
+  };
+  findings.forEach((f, i) => {
+    if (!f.boxes?.length || f.type==='stats') return;
+    const p = pal[f.severity] || pal.normal;
+    f.boxes.forEach(b => {
+      if (!b) return;
+      // Fill
+      octx.fillStyle = p.fill;
+      octx.fillRect(b.x, b.y, b.w, b.h);
+      // Dashed border
+      octx.strokeStyle = p.stroke;
+      octx.lineWidth   = 1.5;
+      octx.setLineDash([5,3]);
+      octx.strokeRect(b.x+1, b.y+1, b.w-2, b.h-2);
+      octx.setLineDash([]);
+      // Corner brackets
+      const cs = 10;
+      octx.lineWidth = 2;
+      [[b.x,b.y],[b.x+b.w,b.y],[b.x,b.y+b.h],[b.x+b.w,b.y+b.h]].forEach(([cx,cy],ci)=>{
+        const dx=ci%2===0?1:-1, dy=ci<2?1:-1;
+        octx.beginPath();
+        octx.moveTo(cx+dx*cs, cy); octx.lineTo(cx, cy); octx.lineTo(cx, cy+dy*cs);
+        octx.stroke();
+      });
+      // Label
+      octx.font = 'bold 10px DM Sans, sans-serif';
+      const label = `${String(i+1).padStart(2,'0')} ${f.region.substring(0,24)}`;
+      const lw = octx.measureText(label).width + 10;
+      const ly = Math.max(b.y - 18, 0);
+      octx.fillStyle = p.stroke;
+      octx.fillRect(b.x, ly, lw, 18);
+      octx.fillStyle = '#fff';
+      octx.fillText(label, b.x+5, ly+13);
+    });
+  });
+}
+
+function renderHeatmap() {
+  const W  = imageCanvas.width, H = imageCanvas.height;
+  const px = ctx.getImageData(0,0,W,H).data;
+  const BS = 16;
+  const blocks = [];
+  let mn=255, mx=0;
+
+  for (let r=0; r<Math.ceil(H/BS); r++) {
+    for (let c=0; c<Math.ceil(W/BS); c++) {
+      let sum=0, cnt=0;
+      for (let y=r*BS; y<Math.min((r+1)*BS,H); y++) {
+        for (let x=c*BS; x<Math.min((c+1)*BS,W); x++) {
+          const i=(y*W+x)*4;
+          sum += 0.299*px[i]+0.587*px[i+1]+0.114*px[i+2];
+          cnt++;
+        }
+      }
+      const avg=sum/cnt;
+      blocks.push({c,r,avg});
+      mn=Math.min(mn,avg); mx=Math.max(mx,avg);
+    }
+  }
+
+  blocks.forEach(b => {
+    const t = mx>mn?(b.avg-mn)/(mx-mn):0.5;
+    let R,G,B;
+    if      (t<0.25) { const s=t/0.25;      R=0;                    G=Math.round(s*255);   B=255; }
+    else if (t<0.5)  { const s=(t-.25)/.25;  R=0;                    G=255;                 B=Math.round((1-s)*255); }
+    else if (t<0.75) { const s=(t-.5)/.25;   R=Math.round(s*255);    G=255;                 B=0; }
+    else             { const s=(t-.75)/.25;  R=255;                  G=Math.round((1-s)*255); B=0; }
+    octx.fillStyle = `rgba(${R},${G},${B},0.4)`;
+    octx.fillRect(b.c*BS, b.r*BS, BS, BS);
+  });
+
+  // Legend
+  const lx=12, ly=H-40, lw=150, lh=11;
+  const grad = octx.createLinearGradient(lx,0,lx+lw,0);
+  grad.addColorStop(0,   'rgba(0,0,255,0.85)');
+  grad.addColorStop(0.25,'rgba(0,255,255,0.85)');
+  grad.addColorStop(0.5, 'rgba(0,255,0,0.85)');
+  grad.addColorStop(0.75,'rgba(255,255,0,0.85)');
+  grad.addColorStop(1,   'rgba(255,0,0,0.85)');
+  octx.fillStyle = 'rgba(255,255,255,0.85)';
+  octx.roundRect ? octx.roundRect(lx-4,ly-14,lw+8,lh+26,4) : octx.fillRect(lx-4,ly-14,lw+8,lh+26);
+  octx.fill();
+  octx.fillStyle = grad;
+  octx.fillRect(lx, ly, lw, lh);
+  octx.fillStyle = '#1e293b';
+  octx.font      = '9px DM Sans, sans-serif';
+  octx.fillText('Low density', lx, ly+lh+11);
+  octx.textAlign = 'right';
+  octx.fillText('High density', lx+lw, ly+lh+11);
+  octx.textAlign = 'left';
+}
+
+// ═══════════════════════════════════════
+//  PDF REPORT
+// ═══════════════════════════════════════
+async function generatePDF() {
+  if (!currentImage || !findings.length) { showError('No analysis to export.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const PW=210, PH=297, M=18;
+  let y = M;
+
+  // Header
+  doc.setFillColor(248,250,252);
+  doc.rect(0,0,PW,26,'F');
+  doc.setDrawColor(226,232,240);
+  doc.setLineWidth(0.4);
+  doc.line(0,26,PW,26);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.setTextColor(13,148,136);
+  doc.text('XRay Identifier', M, 11);
+  doc.setFontSize(7);
+  doc.setTextColor(100,116,139);
+  doc.text('RADIOLOGICAL ANALYSIS REPORT', M, 17);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(6.5);
+  const now = new Date();
+  doc.text(`Generated: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, M, 23);
+  y = 34;
+
+  // Disclaimer
+  doc.setFillColor(254,242,242);
+  doc.setDrawColor(252,165,165);
+  doc.roundedRect(M,y,PW-2*M,14,2,2,'FD');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(6.5);
+  doc.setTextColor(153,27,27);
+  doc.text('⚠ MEDICAL DISCLAIMER', M+4,y+5);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(6);
+  doc.setTextColor(185,28,28);
+  doc.text('This report is for informational and educational purposes only. It is NOT a substitute for professional medical advice,',M+4,y+9);
+  doc.text('diagnosis, or treatment. Always consult a qualified radiologist or physician for any medical decisions.',M+4,y+12.5);
+  y += 20;
+
+  // X-Ray image
+  const comp = document.createElement('canvas');
+  comp.width  = imageCanvas.width;
+  comp.height = imageCanvas.height;
+  const cctx  = comp.getContext('2d');
+  cctx.drawImage(imageCanvas, 0, 0);
+  cctx.drawImage(overlayCanvas, 0, 0);
+  const imgB64   = comp.toDataURL('image/jpeg', 0.88);
+  const maxImgW  = PW - 2*M;
+  const aspect   = imageCanvas.height / imageCanvas.width;
+  const imgH     = Math.min(maxImgW * aspect, 88);
+  const finalW   = imgH / aspect;
+  doc.addImage(imgB64,'JPEG', M+(maxImgW-finalW)/2, y, finalW, imgH);
+  doc.setDrawColor(226,232,240);
+  doc.setLineWidth(0.3);
+  doc.rect(M+(maxImgW-finalW)/2, y, finalW, imgH);
+  y += imgH + 8;
+
+  // Assessment
+  if (analysisResult) {
+    doc.setFillColor(248,250,252);
+    doc.setDrawColor(226,232,240);
+    doc.roundedRect(M,y,PW-2*M,22,2,2,'FD');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(7);
+    doc.setTextColor(100,116,139);
+    doc.text((analysisResult.xray_type||'').toUpperCase()+' X-RAY  ·  OVERALL ASSESSMENT', M+4, y+6);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51,65,85);
+    const lines = doc.splitTextToSize(analysisResult.overall_assessment||'', PW-2*M-8);
+    doc.text(lines, M+4, y+12);
+    const sev = analysisResult.overall_severity||'normal';
+    const sc  = {normal:[13,148,136], moderate:[180,83,9], high:[185,28,28]}[sev]||[13,148,136];
+    doc.setFillColor(...sc);
+    doc.roundedRect(PW-M-28,y+3,26,8,1,1,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(6);
+    doc.setTextColor(255,255,255);
+    doc.text(sev.toUpperCase(), PW-M-15, y+8.5, {align:'center'});
+    y += 28;
+  }
+
+  // Findings
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.setTextColor(13,148,136);
+  doc.text('Findings', M, y);
+  y += 5;
+  doc.setFillColor(248,250,252);
+  doc.rect(M,y,PW-2*M,6,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(6.5);
+  doc.setTextColor(100,116,139);
+  doc.text('#',M+2,y+4);
+  doc.text('REGION',M+10,y+4);
+  doc.text('FINDING',M+58,y+4);
+  doc.text('SEVERITY',PW-M-18,y+4);
+  y += 8;
+
+  findings.forEach((f,i) => {
+    const rh = 7 + Math.max(0, doc.splitTextToSize(f.finding,90).length-1)*4;
+    if (y+rh > PH-M-20) { doc.addPage(); y=M; }
+    if (i%2===0) {
+      doc.setFillColor(248,250,252);
+      doc.rect(M,y-2,PW-2*M,rh+2,'F');
+    }
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(100,116,139);
+    doc.text(String(i+1).padStart(2,'0'),M+2,y+4);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(7);
+    doc.setTextColor(15,23,42);
+    doc.text(doc.splitTextToSize(f.region,44),M+10,y+4);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(51,65,85);
+    doc.text(doc.splitTextToSize(f.finding,92),M+58,y+4);
+    const sc={normal:[13,148,136],moderate:[180,83,9],high:[185,28,28]}[f.severity||'normal']||[13,148,136];
+    doc.setFillColor(...sc);
+    doc.roundedRect(PW-M-22,y,20,6,1,1,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(5.5);
+    doc.setTextColor(255,255,255);
+    doc.text((f.severity||'normal').toUpperCase(),PW-M-12,y+4.2,{align:'center'});
+    y += rh+3;
+  });
+
+  // Recommendations
+  if (analysisResult?.recommendations) {
+    if (y+20>PH-M) { doc.addPage(); y=M; }
+    y+=4;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(13,148,136);
+    doc.text('Recommendations',M,y);
+    y+=5;
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(51,65,85);
+    const rl = doc.splitTextToSize(analysisResult.recommendations,PW-2*M);
+    doc.text(rl,M,y);
+    y+=rl.length*4+4;
+  }
+
+  // Footer
+  const total = doc.internal.getNumberOfPages();
+  for (let p=1;p<=total;p++) {
+    doc.setPage(p);
+    doc.setDrawColor(226,232,240);
+    doc.setLineWidth(0.3);
+    doc.line(M,PH-12,PW-M,PH-12);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(6);
+    doc.setTextColor(148,163,184);
+    doc.text('XRay Identifier · For educational use only · Not for clinical diagnosis',M,PH-7);
+    doc.text(`Page ${p} of ${total}`,PW-M,PH-7,{align:'right'});
+  }
+
+  doc.save(`xray-report-${Date.now()}.pdf`);
+}
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+function setLoading(on, msg='') {
+  loadingOverlay.classList.toggle('active', on);
+  if (msg) loadingText.textContent = msg;
+  document.getElementById('btnAnalyze').disabled = on;
+}
+
+function showError(msg) {
+  const t = document.getElementById('errorToast');
+  t.textContent = '⚠ ' + msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>{ t.style.display='none'; }, 4500);
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.addEventListener('resize', () => {
+  if (currentImage) { drawImage(); renderOverlay(); }
+});
+</script>
+</body>
+</html>

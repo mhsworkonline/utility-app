@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/xray-analyzer.html" }
+  ],
+  "functions": {
+    "api/analyze.js": {
+      "maxDuration": 30
+    }
+  }
+}

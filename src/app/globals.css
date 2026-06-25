@@ -1,26 +1,98 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Brand */
+  --color-brand: #4573D9;
+  --color-brand-hover: #3F65C4;
+  --color-brand-light: #EEF2FB;
+  --color-brand-lighter: #F5F8FF;
+  --color-brand-border: #C5D3F0;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Ink (text) */
+  --color-ink: #151B26;
+  --color-ink-muted: #6B6F76;
+  --color-ink-subtle: #9EA3AA;
+  --color-ink-faint: #B0B3B8;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Surface */
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FAFBFC;
+  --color-surface-hover: #F5F5F5;
+  --color-surface-active: #F0F1F3;
+  --color-surface-border: #E8E8E9;
+  --color-surface-input: #D0D2D6;
+
+  /* Semantic */
+  --color-success: #14A454;
+  --color-success-muted: #22C55E;
+  --color-warning: #F59E0B;
+  --color-warning-muted: #F7C325;
+  --color-danger: #EF4444;
+  --color-danger-dark: #DC2626;
+
+  /* Accents */
+  --color-accent-coral: #F06A6A;
+  --color-accent-teal: #4ECBC4;
+  --color-accent-amber: #F7C325;
+  --color-accent-green: #14A454;
+  --color-accent-orange: #FF8C42;
+  --color-accent-purple: #6C63FF;
+  --color-accent-brown: #D9822B;
+  --color-accent-pink: #E879F9;
+  --color-accent-sky: #0EA5E9;
+  --color-accent-flame: #FF6B35;
+  --color-accent-cyan: #06B6D4;
+  --color-accent-violet: #8B5CF6;
+  --color-accent-lime: #F97316;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-md: 15px;
+  --text-md--line-height: 22px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 18px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 20px;
+  --text-2xl--line-height: 28px;
+
+  /* Spacing extras */
+  --spacing-4_5: 18px;
+  --spacing-13: 52px;
+  --spacing-18: 72px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-focus: 0 0 0 2px #EEF2FB, 0 0 0 4px #4573D9;
+
+  /* Z-index */
+  --z-index-dropdown: 100;
+  --z-index-panel: 200;
+  --z-index-modal: 300;
+  --z-index-toast: 400;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }
