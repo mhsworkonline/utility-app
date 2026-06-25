@@ -585,6 +585,45 @@
     }
     .panel-footer .btn { width: 100%; justify-content: center; }
 
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .app {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+      .viewer {
+        height: 55vw;
+        min-height: 260px;
+        max-height: 420px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .panel {
+        height: auto;
+        overflow: visible;
+      }
+      .panel-body {
+        max-height: none !important;
+        overflow: visible;
+      }
+      .viewer-toolbar {
+        padding: 8px 12px;
+        gap: 6px;
+      }
+      .toolbar-divider { display: none; }
+      .analyze-section {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .analyze-sub { display: none; }
+    }
+    @media (max-width: 480px) {
+      .viewer-body { padding: 12px; }
+      .btn { font-size: 0.75rem; padding: 6px 10px; }
+    }
+
     /* ── ERROR TOAST ── */
     #errorToast {
       position: fixed;

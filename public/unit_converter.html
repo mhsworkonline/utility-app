@@ -38,6 +38,16 @@
   .card .unit-sym{font-size:11px;font-weight:400;color:#aaa;margin-left:2px}
   .copied-tag{position:absolute;top:8px;right:10px;font-size:10px;color:#888;opacity:0;transition:opacity .2s;background:#f0f0ee;padding:2px 6px;border-radius:10px}
   .card.show-copied .copied-tag{opacity:1}
+  @media(max-width:520px){
+    body{padding:1.25rem .75rem}
+    .header h1{font-size:20px}
+    .cat-btn{padding:8px 14px;font-size:12px;min-height:36px}
+    .converter-card{padding:1.25rem}
+    .converter-row{grid-template-columns:1fr 36px 1fr}
+    .big-input{font-size:22px;padding:11px 12px}
+    .field select{font-size:13px}
+    .grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+  }
 </style>
 </head>
 <body>

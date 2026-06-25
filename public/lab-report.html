@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lab Report Analysis</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F5F4F0;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F7F4;
+  --border:#E2E1DC;
+  --text-dark:#18181A;
+  --text-mid:#4A4A50;
+  --text-muted:#8A8A92;
+  --brand:#4573D9;
+  --brand-light:#EEF2FB;
+  --normal:#16A34A;
+  --normal-bg:#F0FDF4;
+  --normal-border:#BBF7D0;
+  --high:#DC2626;
+  --high-bg:#FEF2F2;
+  --high-border:#FECACA;
+  --low:#D97706;
+  --low-bg:#FFFBEB;
+  --low-border:#FDE68A;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.06);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem;}
+.page{max-width:900px;margin:0 auto;}
+
+/* Header */
+.header{margin-bottom:2rem;}
+.header-eyebrow{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.header-title{font-size:24px;font-weight:600;color:var(--text-dark);letter-spacing:-0.01em;margin-bottom:4px;}
+.header-sub{font-size:14px;color:var(--text-muted);line-height:1.5;}
+
+/* Upload zone */
+.upload-card{
+  background:var(--surface);border:2px dashed var(--border);
+  border-radius:16px;padding:3rem 2rem;text-align:center;
+  cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:1.5rem;
+}
+.upload-card:hover,.upload-card.drag-over{border-color:var(--brand);background:var(--brand-light);}
+.upload-icon{font-size:36px;margin-bottom:12px;opacity:.4;}
+.upload-title{font-size:15px;font-weight:600;color:var(--text-dark);margin-bottom:4px;}
+.upload-sub{font-size:13px;color:var(--text-muted);}
+.upload-formats{display:flex;justify-content:center;gap:8px;margin-top:12px;}
+.fmt-badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;background:var(--surface-alt);border:1px solid var(--border);color:var(--text-muted);}
+#file-input{display:none;}
+
+/* File preview */
+.file-preview{display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:1.5rem;box-shadow:var(--shadow-card);}
+.file-preview.show{display:flex;align-items:center;gap:14px;}
+.file-icon{font-size:28px;flex-shrink:0;}
+.file-info{flex:1;min-width:0;}
+.file-name{font-size:14px;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-size{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.file-remove{background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;padding:4px 6px;border-radius:4px;transition:color .15s;}
+.file-remove:hover{color:var(--text-dark);}
+
+/* Button */
+.btn-analyze{
+  width:100%;padding:13px;background:var(--brand);color:#fff;border:none;
+  border-radius:10px;font-size:15px;font-weight:600;font-family:var(--font);
+  cursor:pointer;transition:opacity .2s;margin-bottom:2rem;
+}
+.btn-analyze:disabled{opacity:.4;cursor:not-allowed;}
+.btn-analyze:not(:disabled):hover{opacity:.9;}
+
+/* Loading */
+.loading{display:none;text-align:center;padding:3rem;color:var(--text-muted);font-size:14px;}
+.loading.show{display:block;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Error */
+.error-box{display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:14px 18px;font-size:13px;color:#991B1B;margin-bottom:1.5rem;}
+.error-box.show{display:block;}
+
+/* Results */
+.results{display:none;}
+.results.show{display:block;}
+
+/* Patient bar */
+.patient-bar{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;display:flex;flex-wrap:wrap;gap:16px 32px;
+  margin-bottom:1.25rem;box-shadow:var(--shadow-card);
+}
+.patient-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px;}
+.patient-value{font-size:14px;font-weight:600;color:var(--text-dark);}
+
+/* Report type */
+.report-type-row{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;}
+.report-type-badge{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:var(--brand-light);color:var(--brand);border:1px solid #C5D5F5;}
+.report-type-label{font-size:13px;color:var(--text-muted);}
+
+/* Section card */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;box-shadow:var(--shadow-card);}
+.section-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.section-head-icon{font-size:16px;}
+.section-head-title{font-size:14px;font-weight:700;color:var(--text-dark);}
+.section-body{padding:16px 20px;}
+
+/* Test table */
+.test-table{width:100%;border-collapse:collapse;}
+.test-table th{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);padding:10px 20px;background:var(--surface-alt);border-bottom:1px solid var(--border);text-align:left;}
+.test-table td{padding:12px 20px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.test-table tr:last-child td{border-bottom:none;}
+.test-table tr:hover td{background:var(--surface-alt);}
+.test-name{font-weight:600;color:var(--text-dark);}
+.test-note{font-size:11px;color:var(--text-muted);margin-top:2px;font-style:italic;}
+
+/* Status badges */
+.status-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+.status-NORMAL{background:var(--normal-bg);color:var(--normal);border:1px solid var(--normal-border);}
+.status-HIGH{background:var(--high-bg);color:var(--high);border:1px solid var(--high-border);}
+.status-LOW{background:var(--low-bg);color:var(--low);border:1px solid var(--low-border);}
+
+/* Summary / flags / recs */
+.summary-text,.rec-text{font-size:14px;color:var(--text-mid);line-height:1.65;}
+.flag-list{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.flag-item{
+  display:flex;align-items:flex-start;gap:12px;
+  background:var(--surface-alt);border:1px solid var(--border);
+  border-radius:10px;padding:12px 14px;
+}
+.flag-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px;background:var(--high);}
+.flag-dot.low{background:var(--low);}
+.flag-content{flex:1;min-width:0;}
+.flag-finding{font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:4px;line-height:1.4;}
+.flag-significance{font-size:13px;color:var(--text-mid);line-height:1.55;margin-bottom:6px;}
+.flag-action{font-size:12px;color:var(--brand);font-weight:600;}
+
+/* Disclaimer */
+.disclaimer{background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400E;line-height:1.6;margin-bottom:1.5rem;}
+
+/* Actions */
+.action-row{display:flex;gap:10px;margin-bottom:2rem;}
+.btn-download{flex:1;padding:12px;background:var(--text-dark);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:opacity .2s;}
+.btn-download:hover{opacity:.85;}
+.btn-new{padding:12px 20px;background:var(--surface);color:var(--text-dark);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:background .2s;}
+.btn-new:hover{background:var(--surface-alt);}
+
+/* Responsive */
+@media(max-width:600px){
+  body{padding:1rem .75rem;}
+  .test-table th:nth-child(3),.test-table td:nth-child(3),
+  .test-table th:nth-child(4),.test-table td:nth-child(4){display:none;}
+  .action-row{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">AI-Powered · Upload &amp; Analyze</div>
+    <div class="header-title">Lab Report Analysis</div>
+    <div class="header-sub">Upload your lab report (PDF or image) to get an AI-generated summary with flagged values and recommendations.</div>
+  </div>
+
+  <div class="upload-card" id="upload-zone">
+    <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png"/>
+    <div class="upload-icon">📋</div>
+    <div class="upload-title">Drop your lab report here</div>
+    <div class="upload-sub">or click to browse</div>
+    <div class="upload-formats">
+      <span class="fmt-badge">PDF</span>
+      <span class="fmt-badge">JPG</span>
+      <span class="fmt-badge">PNG</span>
+    </div>
+  </div>
+
+  <div class="file-preview" id="file-preview">
+    <div class="file-icon" id="file-icon">📄</div>
+    <div class="file-info">
+      <div class="file-name" id="file-name"></div>
+      <div class="file-size" id="file-size"></div>
+    </div>
+    <button class="file-remove" id="file-remove" title="Remove">✕</button>
+  </div>
+
+  <button class="btn-analyze" id="btn-analyze" disabled onclick="analyze()">Analyze Report</button>
+
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+    Analyzing your report with AI…
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+
+  <div class="results" id="results">
+
+    <div class="patient-bar" id="patient-bar"></div>
+    <div class="report-type-row" id="report-type-row"></div>
+
+    <div class="section-card">
+      <div class="section-head"><span class="section-head-icon">🧪</span><span class="section-head-title">Test Results</span></div>
+      <table class="test-table">
+        <thead><tr>
+          <th>Test</th><th>Value</th><th>Unit</th><th>Reference Range</th><th>Status</th>
+        </tr></thead>
+        <tbody id="test-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><span class="section-head-icon">📝</span><span class="section-head-title">Summary</span></div>
+      <div class="section-body"><div class="summary-text" id="summary-text"></div></div>
+    </div>
+
+    <div class="section-card" id="flags-card">
+      <div class="section-head"><span class="section-head-icon">⚠️</span><span class="section-head-title">Flags &amp; Concerns</span></div>
+      <div class="section-body"><ul class="flag-list" id="flag-list"></ul></div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><span class="section-head-icon">💡</span><span class="section-head-title">Recommendations</span></div>
+      <div class="section-body"><div class="rec-text" id="rec-text"></div></div>
+    </div>
+
+    <div class="disclaimer">
+      ⚠️ <strong>Medical Disclaimer:</strong> This analysis is AI-generated for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider.
+    </div>
+
+    <div class="action-row">
+      <button class="btn-download" onclick="downloadPDF()">⬇ Download PDF Report</button>
+      <button class="btn-new" onclick="resetApp()">New Report</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let currentFile = null;
+let analysisResult = null;
+
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+document.getElementById('file-remove').addEventListener('click', resetUpload);
+
+function setFile(file) {
+  const allowed = ['application/pdf','image/jpeg','image/png','image/jpg'];
+  if (!allowed.includes(file.type)) { showError('Unsupported file type. Please upload PDF, JPG, or PNG.'); return; }
+  if (file.size > 10 * 1024 * 1024) { showError('File too large. Maximum size is 10 MB.'); return; }
+  currentFile = file;
+  document.getElementById('file-icon').textContent = file.type === 'application/pdf' ? '📄' : '🖼️';
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('file-preview').classList.add('show');
+  document.getElementById('btn-analyze').disabled = false;
+  hideError();
+}
+
+function resetUpload() {
+  currentFile = null; fileInput.value = '';
+  document.getElementById('file-preview').classList.remove('show');
+  document.getElementById('btn-analyze').disabled = true;
+}
+
+async function analyze() {
+  if (!currentFile) return;
+  setLoading(true); hideError();
+  document.getElementById('results').classList.remove('show');
+  try {
+    let payload;
+    if (currentFile.type === 'application/pdf') {
+      const text = await extractPDFText(currentFile);
+      payload = text.trim().length > 50
+        ? { type: 'text', data: text }
+        : { type: 'image', data: await fileToBase64(currentFile) };
+    } else {
+      payload = { type: 'image', data: await fileToBase64(currentFile) };
+    }
+    const res = await fetch('/api/lab-report', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Analysis failed');
+    analysisResult = data;
+    renderResults(data);
+  } catch(e) {
+    showError(e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function extractPDFText(file) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(s => s.str).join(' ') + '\n';
+  }
+  return text;
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function renderResults(data) {
+  const fields = [
+    ['Name', data.patient?.name], ['Age', data.patient?.age],
+    ['Gender', data.patient?.gender], ['Date', data.patient?.date],
+    ['Lab', data.patient?.lab_name]
+  ].filter(([,v]) => v && v !== 'Not specified' && v !== 'N/A' && v !== 'Unknown');
+  document.getElementById('patient-bar').innerHTML = fields.map(([l,v]) =>
+    `<div><div class="patient-label">${l}</div><div class="patient-value">${v}</div></div>`
+  ).join('');
+
+  document.getElementById('report-type-row').innerHTML =
+    `<span class="report-type-label">Report Type</span><span class="report-type-badge">${data.report_type || 'Lab Report'}</span>`;
+
+  document.getElementById('test-tbody').innerHTML = (data.tests || []).map(t => {
+    const raw = (t.status || 'NORMAL').toUpperCase();
+    // Qualitative override: if value indicates presence, force HIGH
+    const qualPositive = /^(detected|positive|reactive|present|found|confirmed)/i.test(t.value || '');
+    const qualNegative = /^(not detected|negative|non-reactive|absent|not found)/i.test(t.value || '');
+    const st = qualPositive ? 'HIGH' : qualNegative ? 'NORMAL' : raw;
+    const vc = st==='HIGH'?'color:var(--high)':st==='LOW'?'color:var(--low)':'color:var(--normal)';
+    const label = st==='HIGH'?'↑ Abnormal':st==='LOW'?'↓ Low':'✓ Normal';
+    const unit = t.unit && t.unit !== '—' ? t.unit : '';
+    const ref = t.reference_range && t.reference_range !== '—' ? t.reference_range : '';
+    return `<tr>
+      <td><div class="test-name">${t.name||'—'}</div>${t.note?`<div class="test-note">${t.note}</div>`:''}</td>
+      <td style="font-weight:600;${vc}">${t.value||'—'}</td>
+      <td style="color:var(--text-muted)">${unit||'—'}</td>
+      <td style="color:var(--text-muted)">${ref||'—'}</td>
+      <td><span class="status-badge status-${st}">${label}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('summary-text').textContent = data.summary || 'No summary was returned by the AI. Please try re-analyzing the report.';
+
+  const flags = data.flags || [];
+  const flagsCard = document.getElementById('flags-card');
+  flagsCard.style.display = flags.length ? '' : 'none';
+  document.getElementById('flag-list').innerHTML = flags.map(f => {
+    // Support both old string format and new object format
+    if (typeof f === 'string') {
+      const isLow = f.toLowerCase().includes('low');
+      return `<li class="flag-item"><span class="flag-dot${isLow?' low':''}"></span><div class="flag-content"><div class="flag-finding">${f}</div></div></li>`;
+    }
+    const isLow = (f.finding||'').toLowerCase().includes('low');
+    return `<li class="flag-item">
+      <span class="flag-dot${isLow?' low':''}"></span>
+      <div class="flag-content">
+        <div class="flag-finding">${f.finding||''}</div>
+        ${f.significance?`<div class="flag-significance">${f.significance}</div>`:''}
+        ${f.action?`<div class="flag-action">→ ${f.action}</div>`:''}
+      </div>
+    </li>`;
+  }).join('');
+
+  document.getElementById('rec-text').textContent = data.recommendations || 'Please consult a qualified healthcare provider to interpret these results and determine appropriate next steps.';
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function downloadPDF() {
+  if (!analysisResult) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const M = 18, W = 210 - M*2;
+  let y = 18;
+
+  doc.setFillColor(24,24,26); doc.rect(0,0,210,28,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(255,255,255);
+  doc.text('LAB REPORT ANALYSIS', M, 13);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(180,180,180);
+  doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, M, 21);
+  y = 38;
+
+  doc.setFillColor(255,251,235); doc.rect(M,y,W,12,'F');
+  doc.setFillColor(245,158,11); doc.rect(M,y,2,12,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(146,64,14);
+  doc.text('DISCLAIMER: For informational purposes only. Consult a qualified healthcare provider for medical advice.', M+5, y+7.5);
+  y += 18;
+
+  const d = analysisResult;
+  if (d.patient) {
+    const fields = [d.patient.name,d.patient.age,d.patient.gender,d.patient.date,d.patient.lab_name]
+      .filter(v => v && v!=='Not specified');
+    if (fields.length) {
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
+      doc.text('PATIENT INFORMATION', M, y); y += 5;
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(74,74,80);
+      doc.text(fields.join('  ·  '), M, y); y += 10;
+    }
+  }
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
+  doc.text(`Report Type: ${d.report_type||'—'}`, M, y); y += 10;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
+  doc.text('TEST RESULTS', M, y); y += 5;
+  doc.setFillColor(248,247,244); doc.rect(M,y,W,7,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(100,100,110);
+  ['TEST','VALUE','UNIT','REFERENCE','STATUS'].forEach((h,i) => {
+    doc.text(h, M + [2,80,105,130,165][i], y+4.5);
+  });
+  y += 7;
+
+  (d.tests||[]).forEach(t => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    const st = (t.status||'NORMAL').toUpperCase();
+    const col = st==='HIGH'?[220,38,38]:st==='LOW'?[217,119,6]:[22,163,74];
+    doc.setDrawColor(226,225,220); doc.line(M,y,M+W,y);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(24,24,26);
+    doc.text(t.name||'—', M+2, y+5.5);
+    doc.setTextColor(...col);
+    doc.text(String(t.value||'—'), M+80, y+5.5);
+    doc.setFont('helvetica','normal'); doc.setTextColor(74,74,80);
+    doc.text(t.unit||'—', M+105, y+5.5);
+    doc.text(t.reference_range||'—', M+130, y+5.5);
+    doc.setFont('helvetica','bold'); doc.setTextColor(...col);
+    doc.text(st, M+165, y+5.5);
+    y += 9;
+    if (t.note) {
+      doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(138,138,146);
+      doc.text(t.note, M+2, y); y += 5;
+    }
+  });
+  y += 6;
+
+  const section = (title, text) => {
+    if (!text) return;
+    if (y > 255) { doc.addPage(); y = 20; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
+    doc.text(title, M, y); y += 5;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(74,74,80);
+    doc.splitTextToSize(text, W).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M,y); y+=5; });
+    y += 4;
+  };
+
+  section('AI SUMMARY', d.summary);
+  if ((d.flags||[]).length) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
+    doc.text('FLAGS & CONCERNS', M, y); y += 6;
+    d.flags.forEach(f => {
+      if (y > 265) { doc.addPage(); y = 20; }
+      const finding = typeof f === 'string' ? f : f.finding;
+      const significance = typeof f === 'object' ? f.significance : '';
+      const action = typeof f === 'object' ? f.action : '';
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(24,24,26);
+      doc.splitTextToSize(`• ${finding}`, W-4).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M+2,y); y+=5; });
+      if (significance) {
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(74,74,80);
+        doc.splitTextToSize(significance, W-8).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M+6,y); y+=4.5; });
+      }
+      if (action) {
+        doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(69,115,217);
+        doc.splitTextToSize(`→ ${action}`, W-8).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M+6,y); y+=4.5; });
+      }
+      y += 3;
+    });
+    y += 2;
+  }
+  section('RECOMMENDATIONS', d.recommendations);
+
+  doc.save(`lab-report-${Date.now()}.pdf`);
+}
+
+function resetApp() {
+  resetUpload(); hideError(); analysisResult = null;
+  document.getElementById('results').classList.remove('show');
+  setLoading(false);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function setLoading(v) {
+  document.getElementById('loading').classList.toggle('show', v);
+  document.getElementById('btn-analyze').disabled = v || !currentFile;
+}
+function showError(msg) { const e = document.getElementById('error-box'); e.textContent = msg; e.classList.add('show'); }
+function hideError() { document.getElementById('error-box').classList.remove('show'); }
+</script>
+</body>
+</html>

@@ -36,4 +36,11 @@ export const apps: App[] = [
     url: "/unit_converter.html",
     tags: ["Utility"],
   },
+  {
+    id: "lab-report",
+    name: "Lab Report Analysis",
+    description: "Upload a lab report PDF or image and get an AI-generated summary with flagged values and recommendations.",
+    url: "/lab-report.html",
+    tags: ["AI", "Medical"],
+  },
 ];
