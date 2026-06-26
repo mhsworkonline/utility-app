@@ -43,4 +43,11 @@ export const apps: App[] = [
     url: "/lab-report.html",
     tags: ["AI", "Medical"],
   },
+  {
+    id: "video-downloader",
+    name: "Video Downloader",
+    description: "Paste a YouTube, Instagram, or Facebook video URL to download as MP4 (360p–1080p) or MP3. Max 100 MB.",
+    url: "/video-downloader.html",
+    tags: ["Utility", "Media"],
+  },
 ];
