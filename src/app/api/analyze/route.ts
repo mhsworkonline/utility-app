@@ -8,8 +8,14 @@ interface Config {
 }
 
 function loadConfig(): Config {
-  const cfgPath = path.join(process.cwd(), "servers", "xray-identifier", "config.json");
-  return JSON.parse(fs.readFileSync(cfgPath, "utf8")) as Config;
+  const envKey = process.env.GROQ_API_KEY?.trim();
+  if (envKey) return { groq_api_key: envKey };
+  try {
+    const cfgPath = path.join(process.cwd(), "servers", "xray-identifier", "config.json");
+    return JSON.parse(fs.readFileSync(cfgPath, "utf8")) as Config;
+  } catch {
+    throw new Error("GROQ_API_KEY is not configured. Add it in Netlify → Site Settings → Environment Variables, then redeploy.");
+  }
 }
 
 const PROMPT = `You are an expert radiologist. Analyze this medical image thoroughly.
@@ -55,8 +61,8 @@ export async function POST(req: NextRequest) {
   let config: Config;
   try {
     config = loadConfig();
-  } catch {
-    return NextResponse.json({ error: "Server config not found." }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
   const payload = {
