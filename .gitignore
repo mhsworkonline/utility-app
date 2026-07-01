@@ -42,3 +42,6 @@ next-env.d.ts
 **/node_modules
 servers/xray-identifier/config.json
 /bin/
+
+# Local Netlify folder
+.netlify
