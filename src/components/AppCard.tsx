@@ -2,6 +2,14 @@ import Image from "next/image";
 import type { App } from "@/data/apps";
 
 const ICONS: Record<string, React.ReactNode> = {
+  store: (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+      <rect x="3" y="3" width="5.5" height="5.5" rx="1.5" />
+      <rect x="11.5" y="3" width="5.5" height="5.5" rx="1.5" />
+      <rect x="3" y="11.5" width="5.5" height="5.5" rx="1.5" />
+      <rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1.5" />
+    </svg>
+  ),
   scan: (
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
       <rect x="3" y="3" width="14" height="14" rx="2" />
@@ -36,6 +44,7 @@ const ICONS: Record<string, React.ReactNode> = {
 };
 
 const ICON_STYLE: Record<string, { bg: string; color: string }> = {
+  store:     { bg: "#EEF2FF", color: "#4F46E5" },
   scan:      { bg: "#EFF6FF", color: "#3B82F6" },
   pill:      { bg: "#F0FDF4", color: "#16A34A" },
   ruler:     { bg: "#F5F3FF", color: "#7C3AED" },

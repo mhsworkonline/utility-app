@@ -42,6 +42,14 @@ export const apps: App[] = [
     tags: ["AI", "Medical"],
   },
   {
+    id: "app-lookup",
+    name: "App Store Lookup",
+    description: "Search a company name to discover all their iOS and Android apps with versions and last release dates.",
+    url: "/app-lookup.html",
+    icon: "store",
+    tags: ["Utility", "Research"],
+  },
+  {
     id: "video-downloader",
     name: "Video Downloader",
     description: "Paste a YouTube, Instagram, or Facebook video URL to download as MP4 (360p–1080p) or MP3. Max 100 MB.",
