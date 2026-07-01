@@ -8,7 +8,5 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# App Store Lookup makes multiple external HTTP requests — needs extra time
 [functions]
   node_bundler = "nft"
-  timeout      = 26
