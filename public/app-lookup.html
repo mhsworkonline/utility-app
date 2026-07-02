@@ -26,7 +26,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 /* Card */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-card);margin-bottom:1rem;overflow:hidden;}
 
-/* Search card */
+/* Search */
 .input-body{padding:1.25rem;}
 .field-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;}
 .search-row{display:flex;gap:8px;}
@@ -74,22 +74,50 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 .stats-bar{display:flex;gap:1.5rem;padding:.75rem 1.25rem;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted);}
 .stats-bar b{color:var(--text-dark);}
 
-/* App rows */
-.app-row{display:flex;align-items:center;gap:12px;padding:.85rem 1.25rem;border-bottom:1px solid var(--border);}
-.app-row:last-child{border-bottom:none;}
+/* App entry wrapper */
+.app-entry{border-bottom:1px solid var(--border);}
+.app-entry:last-child{border-bottom:none;}
+
+/* App row — compact */
+.app-row{display:flex;align-items:center;gap:12px;padding:.85rem 1.25rem;cursor:pointer;transition:background .12s;user-select:none;}
+.app-row:hover{background:var(--surface-alt);}
+.app-row--fresh{background:#F0FDF4;border-left:3px solid #16A34A;}
+.app-row--fresh:hover{background:#E7FAF0;}
+.app-row--fresh .app-name{color:#15803D;}
 .app-icon{width:44px;height:44px;border-radius:10px;flex-shrink:0;object-fit:cover;border:1px solid var(--border);}
 .app-icon-fb{width:44px;height:44px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;}
 .app-info{flex:1;min-width:0;}
-.app-name{font-size:14px;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
-.app-sub{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
-.app-ver{font-size:11px;color:var(--text-muted);font-family:"SF Mono",Consolas,monospace;}
-.app-date{font-size:11px;color:var(--text-muted);}
-.app-dot{font-size:10px;color:var(--border);}
-.app-badge{display:flex;gap:5px;margin-left:auto;flex-shrink:0;}
+.app-name{font-size:14px;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
+.app-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.meta-star{font-size:11px;font-weight:700;color:#D97706;}
+.meta-installs{font-size:11px;color:var(--text-muted);}
+.meta-free{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0;}
+.meta-paid{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA;}
+.meta-age{font-size:10px;font-weight:600;padding:1px 5px;border-radius:4px;background:var(--surface-alt);color:var(--text-muted);border:1px solid var(--border);}
+.meta-sep{font-size:10px;color:var(--border);}
+.app-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.store-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;text-decoration:none;white-space:nowrap;transition:opacity .12s;}
+.store-badge:hover{opacity:.8;}
+.store-badge-ios{background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE;}
+.store-badge-android{background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0;}
+.chevron{width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);flex-shrink:0;transition:transform .2s;}
 
-/* Recently updated highlight (within last 7 days) */
-.app-row--fresh{background:#F0FDF4;border-left:3px solid #16A34A;}
-.app-row--fresh .app-name{color:#15803D;}
+/* Detail panel */
+.app-detail{border-top:1px solid var(--border);background:var(--surface-alt);display:none;}
+.detail-platform{padding:1rem 1.25rem;}
+.detail-platform+.detail-platform{border-top:1px solid var(--border);}
+.detail-platform-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;}
+.detail-plat-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);}
+.detail-store-link{font-size:12px;font-weight:600;color:var(--brand);text-decoration:none;}
+.detail-store-link:hover{text-decoration:underline;}
+.detail-table{width:100%;border-collapse:collapse;}
+.detail-table tr+tr td{border-top:1px solid var(--border);}
+.dt-label{font-size:12px;color:var(--text-muted);padding:5px 0;width:100px;vertical-align:top;}
+.dt-value{font-size:12px;color:var(--text-dark);padding:5px 0;font-weight:500;}
+.dt-star{color:#D97706;font-weight:700;}
+.detail-desc{font-size:12px;color:var(--text-mid);margin-top:.75rem;line-height:1.6;font-style:italic;}
+
+/* Freshness */
 .search-app-row--fresh{background:#F0FDF4;border-left:3px solid #16A34A;}
 .search-app-row--fresh .search-app-name{color:#15803D;}
 
@@ -97,20 +125,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 .back-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-muted);background:none;border:none;cursor:pointer;font-family:var(--font);padding:0;margin-bottom:10px;}
 .back-btn:hover{color:var(--brand);}
 
-/* Spinner */
-.spinner-wrap{padding:2.5rem;display:flex;justify-content:center;}
-.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-
-/* Sort select */
+/* Sort */
 .sort-select{font-size:12px;color:var(--text-mid);border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);font-family:var(--font);cursor:pointer;outline:none;appearance:none;padding-right:22px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A8A92' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;}
 .sort-select:focus{border-color:var(--brand);}
 
-/* State messages */
+/* Spinner / states */
+.spinner-wrap{padding:2.5rem;display:flex;justify-content:center;}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 .state-msg{padding:2.5rem 1.25rem;text-align:center;color:var(--text-muted);font-size:14px;}
 .state-msg.error{color:#DC2626;}
 
-/* Search results: apps section */
+/* Search result rows */
 .results-section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);padding:.8rem 1.25rem .5rem;border-top:1px solid var(--border);}
 .results-section-label:first-child{border-top:none;}
 .search-app-row{display:flex;align-items:center;gap:10px;padding:.7rem 1.25rem;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;transition:background .12s;}
@@ -127,10 +153,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 @media(max-width:480px){
   .dev-card{flex-direction:column;align-items:flex-start;}
   .btn-view{width:100%;}
-  .app-badge{margin-left:0;margin-top:4px;}
-  .app-row{flex-wrap:wrap;}
+  .app-actions{gap:4px;}
+  .store-badge{padding:3px 7px;}
   .tab-bar{gap:2px;}
   .tab{padding:4px 9px;font-size:12px;}
+  .dt-label{width:80px;}
 }
 </style>
 </head>
@@ -201,7 +228,6 @@ let currentApps    = [];
 let activeTab      = 'all';
 let sortBy         = 'date';
 
-// ── Utilities ────────────────────────────────────────────────────────────────
 function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function fmtDate(iso){
@@ -210,7 +236,15 @@ function fmtDate(iso){
   return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
 }
 
-function isRecent(iso){ if(!iso) return false; return (Date.now() - new Date(iso).getTime()) < 7*24*60*60*1000; }
+function fmtNum(n){
+  if(!n) return '';
+  if(n >= 1e9) return (n/1e9).toFixed(1)+'B';
+  if(n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if(n >= 1e3) return Math.round(n/1e3)+'K';
+  return String(n);
+}
+
+function isRecent(iso){ if(!iso) return false; return (Date.now()-new Date(iso).getTime()) < 7*24*60*60*1000; }
 
 const ICON_COLORS=['#4573D9','#16A34A','#D97706','#7C3AED','#DC2626','#0284C7','#DB2777'];
 function iconColor(n){ let h=0; for(const c of n) h=(h*31+c.charCodeAt(0))&0xffff; return ICON_COLORS[h%ICON_COLORS.length]; }
@@ -236,15 +270,14 @@ function removeHistory(name, e){
 function renderHistory(){
   const h = loadHistory();
   const row = document.getElementById('history-row');
-  if(!h.length){ row.style.display = 'none'; return; }
-  row.style.display = 'flex';
+  if(!h.length){ row.style.display='none'; return; }
+  row.style.display='flex';
   row.innerHTML = `<span class="history-lbl">Recent</span>` +
     h.map(d => `
       <span class="history-chip" onclick="fetchFromHistory(${JSON.stringify(d).replace(/"/g,'&quot;')})">
         ${esc(d.name)}
         <span class="chip-x" onclick="removeHistory(${JSON.stringify(d.name).replace(/"/g,'&quot;')},event)">×</span>
-      </span>
-    `).join('');
+      </span>`).join('');
 }
 
 function fetchFromHistory(dev){
@@ -256,208 +289,240 @@ function fetchFromHistory(dev){
 async function doSearch(){
   const q = document.getElementById('search-input').value.trim();
   if(!q) return;
-
   const btn = document.getElementById('btn-search');
-  btn.disabled = true; btn.textContent = 'Searching…';
-
-  document.getElementById('section-apps').style.display = 'none';
-  document.getElementById('section-devs').style.display = 'block';
-  document.getElementById('devs-body').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
-  document.getElementById('devs-heading').textContent = 'Matching Developers';
-
+  btn.disabled=true; btn.textContent='Searching…';
+  document.getElementById('section-apps').style.display='none';
+  document.getElementById('section-devs').style.display='block';
+  document.getElementById('devs-body').innerHTML='<div class="spinner-wrap"><div class="spinner"></div></div>';
+  document.getElementById('devs-heading').textContent='Matching Developers';
   try {
     const res  = await fetch(`/api/app-search?q=${encodeURIComponent(q)}`);
     const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Search failed.');
-    lastDevResults = data.developers || [];
-    renderSearchResults(lastDevResults, data.apps || [], q);
+    if(!res.ok) throw new Error(data.error||'Search failed.');
+    lastDevResults = data.developers||[];
+    renderSearchResults(lastDevResults, data.apps||[], q);
   } catch(e){
-    document.getElementById('devs-body').innerHTML = `<div class="state-msg error">${esc(e.message)}</div>`;
+    document.getElementById('devs-body').innerHTML=`<div class="state-msg error">${esc(e.message)}</div>`;
   }
-  btn.disabled = false; btn.textContent = 'Search';
+  btn.disabled=false; btn.textContent='Search';
 }
 
 function renderSearchResults(devs, apps, q){
   const total = devs.length + apps.length;
-  document.getElementById('devs-heading').textContent =
-    total ? `Results for "${q}"` : '';
-
+  document.getElementById('devs-heading').textContent = total ? `Results for "${q}"` : '';
   if(!total){
-    document.getElementById('devs-body').innerHTML = `<div class="state-msg">No results for "<b>${esc(q)}</b>".</div>`;
+    document.getElementById('devs-body').innerHTML=`<div class="state-msg">No results for "<b>${esc(q)}</b>".</div>`;
     return;
   }
-
-  let html = '';
-
+  let html='';
   if(devs.length){
-    html += `<div class="results-section-label">Developers (${devs.length})</div>`;
-    html += devs.map(d => `
+    html+=`<div class="results-section-label">Developers (${devs.length})</div>`;
+    html+=devs.map(d=>`
       <div class="dev-card">
         <div>
           <div class="dev-name">${esc(d.name)}</div>
           <div class="dev-badges">
-            ${d.iosCount     ? `<span class="badge badge-ios">iOS</span><span class="badge badge-count">${d.iosCount} app${d.iosCount!==1?'s':''}</span>` : ''}
-            ${d.androidCount ? `<span class="badge badge-android">Android</span><span class="badge badge-count">${d.androidCount} app${d.androidCount!==1?'s':''}</span>` : ''}
+            ${d.iosCount?`<span class="badge badge-ios">iOS</span><span class="badge badge-count">${d.iosCount} app${d.iosCount!==1?'s':''}</span>`:''}
+            ${d.androidCount?`<span class="badge badge-android">Android</span><span class="badge badge-count">${d.androidCount} app${d.androidCount!==1?'s':''}</span>`:''}
           </div>
         </div>
         <button class="btn-view" onclick='fetchApps(${JSON.stringify(d)})'>View Apps →</button>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
-
   if(apps.length){
-    html += `<div class="results-section-label">Apps (${apps.length})</div>`;
-    html += apps.map(app => {
-      const color   = iconColor(app.name);
-      const initial = (app.name||'?')[0].toUpperCase();
-      const iconHtml = app.icon
-        ? `<img class="search-app-icon" src="${esc(app.icon)}" alt="" loading="lazy"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-           <div class="search-app-icon-fb" style="background:${color};display:none;">${esc(initial)}</div>`
-        : `<div class="search-app-icon-fb" style="background:${color};">${esc(initial)}</div>`;
-      // Primary link: iOS store preferred, fallback to Android
-      const primaryUrl  = app.ios?.url || app.android?.url || '#';
-      const searchFresh = isRecent(app.ios?.releaseDate || app.android?.releaseDate || '');
-      const iosBadge     = app.ios     ? `<span class="badge badge-ios">iOS</span>`         : '';
-      const androidBadge = app.android ? `<span class="badge badge-android">Android</span>` : '';
+    html+=`<div class="results-section-label">Apps (${apps.length})</div>`;
+    html+=apps.map(app=>{
+      const color=iconColor(app.name), initial=(app.name||'?')[0].toUpperCase();
+      const iconHtml=app.icon
+        ?`<img class="search-app-icon" src="${esc(app.icon)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="search-app-icon-fb" style="background:${color};display:none;">${esc(initial)}</div>`
+        :`<div class="search-app-icon-fb" style="background:${color};">${esc(initial)}</div>`;
+      const primaryUrl=app.ios?.url||app.android?.url||'#';
+      const fresh=isRecent(app.ios?.releaseDate||app.android?.releaseDate||'');
       return `
-        <a class="search-app-row${searchFresh?' search-app-row--fresh':''}" href="${esc(primaryUrl)}" target="_blank" rel="noopener">
+        <a class="search-app-row${fresh?' search-app-row--fresh':''}" href="${esc(primaryUrl)}" target="_blank" rel="noopener">
           ${iconHtml}
           <div class="search-app-info">
             <div class="search-app-name">${esc(app.name)}</div>
             <div class="search-app-dev">${esc(app.developer)}</div>
           </div>
-          <div class="search-app-badges">${iosBadge}${androidBadge}</div>
+          <div class="search-app-badges">
+            ${app.ios?`<span class="badge badge-ios">iOS</span>`:''}
+            ${app.android?`<span class="badge badge-android">Android</span>`:''}
+          </div>
         </a>`;
     }).join('');
   }
-
-  document.getElementById('devs-body').innerHTML = html;
+  document.getElementById('devs-body').innerHTML=html;
 }
 
 function showDevs(){
-  document.getElementById('section-apps').style.display = 'none';
-  document.getElementById('section-devs').style.display = 'block';
+  document.getElementById('section-apps').style.display='none';
+  document.getElementById('section-devs').style.display='block';
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 function setTab(t){
-  activeTab = t;
-  ['all','ios','android'].forEach(id => {
-    document.getElementById('tab-'+id).classList.toggle('active', id===t);
-  });
+  activeTab=t;
+  ['all','ios','android'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('active',id===t));
   renderAppRows();
 }
 
 // ── App Fetch ────────────────────────────────────────────────────────────────
 async function fetchApps(dev){
   saveHistory(dev);
-
-  document.getElementById('section-devs').style.display = 'none';
-  document.getElementById('section-apps').style.display = 'block';
-  document.getElementById('apps-heading').textContent   = dev.name;
-  document.getElementById('apps-body').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
-
-  // Reset to All tab + default sort
-  activeTab = 'all'; sortBy = 'date';
-  ['all','ios','android'].forEach(id => document.getElementById('tab-'+id).classList.toggle('active', id==='all'));
-  const ss = document.getElementById('sort-select'); ss.value = 'date'; ss.style.display = '';
-
-  const p = new URLSearchParams({ devName: dev.name });
+  document.getElementById('section-devs').style.display='none';
+  document.getElementById('section-apps').style.display='block';
+  document.getElementById('apps-heading').textContent=dev.name;
+  document.getElementById('apps-body').innerHTML='<div class="spinner-wrap"><div class="spinner"></div></div>';
+  activeTab='all'; sortBy='date';
+  ['all','ios','android'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('active',id==='all'));
+  const ss=document.getElementById('sort-select'); ss.value='date'; ss.style.display='';
+  const p=new URLSearchParams({devName:dev.name});
   if(dev.iosArtistId)  p.set('iosId', dev.iosArtistId);
   if(dev.androidDevId) p.set('androidId', dev.androidDevId);
-
   try {
     const res  = await fetch(`/api/app-fetch?${p}`);
     const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Failed to load apps.');
-    currentApps = data.apps || [];
+    if(!res.ok) throw new Error(data.error||'Failed to load apps.');
+    currentApps=data.apps||[];
     updateTabCounts();
     renderAppRows();
   } catch(e){
-    document.getElementById('apps-body').innerHTML = `<div class="state-msg error">${esc(e.message)}</div>`;
+    document.getElementById('apps-body').innerHTML=`<div class="state-msg error">${esc(e.message)}</div>`;
   }
 }
 
-function setSort(val){
-  sortBy = val;
-  renderAppRows();
-}
+function setSort(val){ sortBy=val; renderAppRows(); }
 
 function applySort(apps, tab){
-  if(sortBy === 'name') return [...apps].sort((a,b) => a.name.localeCompare(b.name));
-  // Sort by the date that is actually displayed for the active tab
-  return [...apps].sort((a,b) => {
-    const d = (app) => {
-      if(tab === 'ios')     return app.ios?.releaseDate     ? new Date(app.ios.releaseDate).getTime()     : 0;
-      if(tab === 'android') return app.android?.releaseDate ? new Date(app.android.releaseDate).getTime() : 0;
+  if(sortBy==='name') return [...apps].sort((a,b)=>a.name.localeCompare(b.name));
+  return [...apps].sort((a,b)=>{
+    const d=app=>{
+      if(tab==='ios')     return app.ios?.releaseDate     ? new Date(app.ios.releaseDate).getTime()     : 0;
+      if(tab==='android') return app.android?.releaseDate ? new Date(app.android.releaseDate).getTime() : 0;
       return Math.max(
         app.ios?.releaseDate     ? new Date(app.ios.releaseDate).getTime()     : 0,
         app.android?.releaseDate ? new Date(app.android.releaseDate).getTime() : 0
       );
     };
-    return d(b) - d(a);
+    return d(b)-d(a);
   });
 }
 
 function updateTabCounts(){
-  const iosN     = currentApps.filter(a => a.ios).length;
-  const androidN = currentApps.filter(a => a.android).length;
   document.getElementById('tn-all').textContent     = currentApps.length;
-  document.getElementById('tn-ios').textContent     = iosN;
-  document.getElementById('tn-android').textContent = androidN;
+  document.getElementById('tn-ios').textContent     = currentApps.filter(a=>a.ios).length;
+  document.getElementById('tn-android').textContent = currentApps.filter(a=>a.android).length;
 }
 
-function renderAppRows(){
-  const tab = activeTab;
+// ── Expand / Detail ───────────────────────────────────────────────────────────
+function toggleExpand(idx, e){
+  e.stopPropagation();
+  const detail  = document.getElementById('app-detail-'+idx);
+  const chevron = document.getElementById('app-chev-'+idx);
+  if(!detail) return;
+  const open = detail.style.display==='block';
+  detail.style.display = open ? 'none' : 'block';
+  if(chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+}
 
-  const filtered = applySort(
-    tab === 'ios'     ? currentApps.filter(a => a.ios)
-    : tab === 'android' ? currentApps.filter(a => a.android)
+function platformDetailHtml(data, platform){
+  if(!data) return '';
+  const ratingHtml = data.rating
+    ? `<span class="dt-star">★ ${data.rating.toFixed(1)}</span>${data.ratingCount ? ` <span style="color:var(--text-muted)">(${fmtNum(data.ratingCount)} ratings)</span>` : ''}`
+    : '—';
+  const rows = [
+    ['Rating', ratingHtml],
+    ...(platform==='Android' && data.installs ? [['Installs', esc(data.installs)]] : []),
+    ['Version', esc(data.version||'—')],
+    ['Updated', esc(fmtDate(data.releaseDate))],
+    ...(data.size ? [['Size', esc(data.size)]] : []),
+    ['Price', data.free ? 'Free' : (data.price ? `$${data.price.toFixed(2)}` : '—')],
+    ...(data.category  ? [['Category',   esc(data.category)]]  : []),
+    ...(data.ageRating ? [['Age Rating', esc(data.ageRating)]] : []),
+  ];
+  return `
+    <div class="detail-platform">
+      <div class="detail-platform-head">
+        <span class="detail-plat-label">${platform}</span>
+        ${data.url ? `<a class="detail-store-link" href="${esc(data.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">View in store →</a>` : ''}
+      </div>
+      <table class="detail-table">
+        ${rows.map(([l,v])=>`<tr><td class="dt-label">${l}</td><td class="dt-value">${v}</td></tr>`).join('')}
+      </table>
+      ${data.description ? `<p class="detail-desc">${esc(data.description)}${data.description.length>=200?'…':''}</p>` : ''}
+    </div>`;
+}
+
+// ── Render App Rows ───────────────────────────────────────────────────────────
+function renderAppRows(){
+  const tab=activeTab;
+  const filtered=applySort(
+    tab==='ios'     ? currentApps.filter(a=>a.ios)
+    : tab==='android' ? currentApps.filter(a=>a.android)
     : currentApps,
     tab
   );
 
   if(!filtered.length){
-    document.getElementById('apps-body').innerHTML = '<div class="state-msg">No apps on this platform.</div>';
+    document.getElementById('apps-body').innerHTML='<div class="state-msg">No apps on this platform.</div>';
     return;
   }
 
-  document.getElementById('apps-body').innerHTML = filtered.map(app => {
-    // Platform-specific version and date based on active tab
-    const showIos     = tab !== 'android' && app.ios;
-    const showAndroid = tab !== 'ios'     && app.android;
+  document.getElementById('apps-body').innerHTML = filtered.map((app, idx) => {
+    const showIos     = tab!=='android' && app.ios;
+    const showAndroid = tab!=='ios'     && app.android;
 
-    const ver  = (showIos ? app.ios?.version  : null) ?? (showAndroid ? app.android?.version  : null) ?? '—';
+    // Pick date for freshness based on active tab
     const date = (showIos ? app.ios?.releaseDate : null) ?? (showAndroid ? app.android?.releaseDate : null) ?? '';
-
-    const color    = iconColor(app.name);
-    const initial  = (app.name||'?')[0].toUpperCase();
-    const iconHtml = app.icon
-      ? `<img class="app-icon" src="${esc(app.icon)}" alt="" loading="lazy"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-         <div class="app-icon-fb" style="background:${color};display:none;">${esc(initial)}</div>`
-      : `<div class="app-icon-fb" style="background:${color};">${esc(initial)}</div>`;
-
-    // Show badges: respect active tab filter
-    const iosBadge     = app.ios && tab !== 'android'
-      ? `<a href="${esc(app.ios.url)}" target="_blank" rel="noopener" class="badge badge-ios" style="text-decoration:none;">iOS</a>` : '';
-    const androidBadge = app.android && tab !== 'ios'
-      ? `<a href="${esc(app.android.url)}" target="_blank" rel="noopener" class="badge badge-android" style="text-decoration:none;">Android</a>` : '';
-
     const fresh = isRecent(date);
+
+    // Rating: prefer platform matching tab, fallback to whatever is available
+    const ratingData = (tab==='ios' ? app.ios : tab==='android' ? app.android : null) ?? app.ios ?? app.android;
+    const rating     = ratingData?.rating;
+    const installs   = tab!=='ios' ? app.android?.installs : null;
+    const freeVal    = (tab==='ios' ? app.ios?.free : tab==='android' ? app.android?.free : (app.ios?.free ?? app.android?.free));
+    const ageRating  = (tab==='ios' ? app.ios?.ageRating : tab==='android' ? app.android?.ageRating : (app.ios?.ageRating ?? app.android?.ageRating));
+
+    // Icon
+    const color=iconColor(app.name), initial=(app.name||'?')[0].toUpperCase();
+    const iconHtml=app.icon
+      ?`<img class="app-icon" src="${esc(app.icon)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="app-icon-fb" style="background:${color};display:none;">${esc(initial)}</div>`
+      :`<div class="app-icon-fb" style="background:${color};">${esc(initial)}</div>`;
+
+    // Meta line
+    const metaParts=[];
+    if(rating)    metaParts.push(`<span class="meta-star">★ ${rating.toFixed(1)}</span>`);
+    if(installs)  metaParts.push(`<span class="meta-installs">${esc(installs)}</span>`);
+    if(freeVal!==undefined) metaParts.push(freeVal ? `<span class="meta-free">FREE</span>` : `<span class="meta-paid">PAID</span>`);
+    if(ageRating) metaParts.push(`<span class="meta-age">${esc(ageRating)}</span>`);
+    const metaHtml = metaParts.join('<span class="meta-sep">·</span>');
+
+    // Store badges
+    const iosBadge     = app.ios     && tab!=='android' ? `<a class="store-badge store-badge-ios"     href="${esc(app.ios.url)}"     target="_blank" rel="noopener" onclick="event.stopPropagation()">iOS</a>`     : '';
+    const androidBadge = app.android && tab!=='ios'     ? `<a class="store-badge store-badge-android" href="${esc(app.android.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Android</a>` : '';
+
+    // Detail panel: show platforms matching tab
+    const detailHtml =
+      (showIos     ? platformDetailHtml(app.ios,     'iOS')     : '') +
+      (showAndroid ? platformDetailHtml(app.android, 'Android') : '');
+
     return `
-      <div class="app-row${fresh?' app-row--fresh':''}">
-        ${iconHtml}
-        <div class="app-info">
-          <a class="app-name" title="${esc(app.name)}" href="${esc(app.ios?.url||app.android?.url||'#')}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">${esc(app.name)}</a>
-          <div class="app-sub">
-            <span class="app-ver">v${esc(ver)}</span>
-            <span class="app-dot">·</span>
-            <span class="app-date">${fmtDate(date)}</span>
+      <div class="app-entry">
+        <div class="app-row${fresh?' app-row--fresh':''}" onclick="toggleExpand(${idx},event)">
+          ${iconHtml}
+          <div class="app-info">
+            <div class="app-name" title="${esc(app.name)}">${esc(app.name)}</div>
+            ${metaHtml ? `<div class="app-meta">${metaHtml}</div>` : ''}
+          </div>
+          <div class="app-actions">
+            ${iosBadge}${androidBadge}
+            <span class="chevron" id="app-chev-${idx}">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
+            </span>
           </div>
         </div>
-        <div class="app-badge">${iosBadge}${androidBadge}</div>
+        <div class="app-detail" id="app-detail-${idx}">${detailHtml}</div>
       </div>`;
   }).join('');
 }
