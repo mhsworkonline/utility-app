@@ -13,6 +13,18 @@ function formatBytes(bytes: number): string {
   return `${Math.round(bytes / 1e3)} KB`;
 }
 
+// Map ESRB labels → IARC age numbers (what Play Store actually displays)
+function mapAndroidRating(rating: string): string {
+  switch (rating?.trim()) {
+    case "Everyone":          return "3+";
+    case "Everyone 10+":      return "10+";
+    case "Teen":              return "12+";
+    case "Mature 17+":        return "17+";
+    case "Adults only 18+":   return "18+";
+    default:                  return rating ?? "";
+  }
+}
+
 interface IosApp {
   wrapperType: string;
   trackName: string;
@@ -133,7 +145,7 @@ export async function GET(req: NextRequest) {
       free:        app.free ?? true,
       price:       app.price ?? 0,
       category:    app.genre ?? "",
-      ageRating:   app.contentRating ?? "",
+      ageRating:   mapAndroidRating(app.contentRating ?? ""),
       size:        app.size ?? "",
       description: (app.summary ?? "").slice(0, 200),
     };
