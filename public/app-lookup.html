@@ -236,6 +236,12 @@ function fmtDate(iso){
   return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
 }
 
+function fmtDateShort(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
 function fmtNum(n){
   if(!n) return '';
   if(n >= 1e9) return (n/1e9).toFixed(1)+'B';
@@ -498,9 +504,11 @@ function renderAppRows(){
     if(ageRating) metaParts.push(`<span class="meta-age">${esc(ageRating)}</span>`);
     const metaHtml = metaParts.join('<span class="meta-sep">·</span>');
 
-    // Store badges
-    const iosBadge     = app.ios     && tab!=='android' ? `<a class="store-badge store-badge-ios"     href="${esc(app.ios.url)}"     target="_blank" rel="noopener" onclick="event.stopPropagation()">iOS</a>`     : '';
-    const androidBadge = app.android && tab!=='ios'     ? `<a class="store-badge store-badge-android" href="${esc(app.android.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Android</a>` : '';
+    // Store badges with date
+    const iosDate     = fmtDateShort(app.ios?.releaseDate);
+    const androidDate = fmtDateShort(app.android?.releaseDate);
+    const iosBadge     = app.ios     && tab!=='android' ? `<a class="store-badge store-badge-ios"     href="${esc(app.ios.url)}"     target="_blank" rel="noopener" onclick="event.stopPropagation()">iOS${iosDate ? ' · '+iosDate : ''}</a>`         : '';
+    const androidBadge = app.android && tab!=='ios'     ? `<a class="store-badge store-badge-android" href="${esc(app.android.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Android${androidDate ? ' · '+androidDate : ''}</a>` : '';
 
     // Detail panel: show platforms matching tab
     const detailHtml =

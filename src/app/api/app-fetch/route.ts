@@ -48,8 +48,16 @@ interface AndroidApp {
   summary?: string;
 }
 
-async function fetchIos(artistId: string): Promise<IosApp[]> {
+async function fetchIosByArtistId(artistId: string): Promise<IosApp[]> {
   const url = `https://itunes.apple.com/lookup?id=${artistId}&entity=software&limit=200&country=us`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(IOS_TIMEOUT) });
+  if (!res.ok) return [];
+  const { results = [] } = await res.json();
+  return results.filter((r: IosApp) => r.wrapperType === "software");
+}
+
+async function fetchIosByDevName(devName: string): Promise<IosApp[]> {
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(devName)}&entity=software&attribute=softwareDeveloper&limit=200&country=us`;
   const res = await fetch(url, { signal: AbortSignal.timeout(IOS_TIMEOUT) });
   if (!res.ok) return [];
   const { results = [] } = await res.json();
@@ -66,12 +74,12 @@ export async function GET(req: NextRequest) {
   const androidId = searchParams.get("androidId");
   const devName   = searchParams.get("devName") ?? "";
 
-  if (!iosId && !androidId)
-    return NextResponse.json({ error: "Provide iosId or androidId." }, { status: 400 });
+  if (!iosId && !androidId && !devName)
+    return NextResponse.json({ error: "Provide iosId, androidId, or devName." }, { status: 400 });
 
   const [iosRes, androidRes] = await Promise.allSettled([
-    iosId     ? fetchIos(iosId)         : Promise.resolve([]),
-    androidId ? fetchAndroid(androidId) : Promise.resolve([]),
+    iosId     ? fetchIosByArtistId(iosId) : devName ? fetchIosByDevName(devName) : Promise.resolve([]),
+    androidId ? fetchAndroid(androidId)   : Promise.resolve([]),
   ]);
 
   const iosApps     = iosRes.status     === "fulfilled" ? iosRes.value     : [];
