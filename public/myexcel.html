@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyExcel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+body{font-family:'Calibri',Calibri,Arial,sans-serif;font-size:11px;background:#fff;color:#000;overflow:hidden;height:100vh;display:flex;flex-direction:column;user-select:none}
+/* ─── Title Bar ─── */
+#titlebar{background:#217346;height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;flex-shrink:0}
+#titlebar .logo{display:flex;align-items:center;gap:6px;color:#fff;font-size:13px;font-weight:700}
+#titlebar .logo svg{width:18px;height:18px}
+#titlebar .title-center{color:#fff;font-size:12px;font-weight:400;position:absolute;left:50%;transform:translateX(-50%)}
+#titlebar .win-btns{display:flex;gap:0}
+#titlebar .win-btn{width:46px;height:32px;background:transparent;border:none;cursor:pointer;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+#titlebar .win-btn:hover{background:rgba(255,255,255,.2)}
+#titlebar .win-btn.close:hover{background:#c42b1c}
+/* ─── Quick Access ─── */
+#qat{background:#217346;height:22px;display:flex;align-items:center;gap:1px;padding:0 8px;flex-shrink:0}
+#qat button{background:transparent;border:none;cursor:pointer;color:#fff;width:22px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:2px;font-size:11px}
+#qat button:hover{background:rgba(255,255,255,.2)}
+/* ─── Ribbon ─── */
+#ribbon{background:#f3f3f3;border-bottom:1px solid #d4d4d4;flex-shrink:0}
+#ribbon-tabs{display:flex;align-items:flex-end;padding:0 4px;background:#217346;gap:0}
+.rtab{padding:5px 14px 4px;font-size:11px;color:rgba(255,255,255,.85);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.rtab.active{background:#f3f3f3;color:#000;border-bottom:2px solid #f3f3f3;margin-bottom:-1px;border-top-left-radius:3px;border-top-right-radius:3px}
+.rtab:not(.active):hover{background:rgba(255,255,255,.15);color:#fff}
+#ribbon-content{display:flex;align-items:flex-end;padding:4px 6px 2px;gap:0;min-height:56px}
+.rgroup{display:flex;flex-direction:column;align-items:flex-start;border-right:1px solid #d4d4d4;padding:0 6px;gap:2px;min-height:54px}
+.rgroup:last-child{border-right:none}
+.rgroup-label{font-size:9.5px;color:#666;text-align:center;width:100%;padding-top:2px;margin-top:auto}
+.rgroup-btns{display:flex;align-items:center;gap:1px}
+.rbtn{background:transparent;border:1px solid transparent;border-radius:2px;cursor:pointer;padding:2px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:#333;min-width:22px;height:44px;gap:1px}
+.rbtn.small{flex-direction:row;height:22px;font-size:11px;padding:0 6px;gap:3px}
+.rbtn.active,.rbtn.pressed{background:#ddeeff;border-color:#b8d7f5}
+.rbtn:hover{background:#e8e8e8;border-color:#c8c8c8}
+.rbtn svg{width:18px;height:18px;pointer-events:none}
+.rbtn.small svg{width:13px;height:13px}
+.rbtn span{font-size:9px;line-height:1}
+.sep{width:1px;height:38px;background:#d4d4d4;margin:0 3px}
+/* font controls */
+#font-name{width:110px;height:20px;border:1px solid #d4d4d4;padding:0 4px;font-size:11px;border-radius:1px}
+#font-size{width:42px;height:20px;border:1px solid #d4d4d4;padding:0 4px;font-size:11px;text-align:center;border-radius:1px}
+#font-name:focus,#font-size:focus{border-color:#217346;outline:none}
+.font-row{display:flex;gap:2px;align-items:center}
+.color-btn{display:flex;flex-direction:column;align-items:center;cursor:pointer;background:transparent;border:1px solid transparent;border-radius:2px;padding:2px;width:26px;height:38px;gap:1px}
+.color-btn:hover{background:#e8e8e8;border-color:#c8c8c8}
+.color-btn svg{width:16px;height:16px}
+.color-stripe{height:3px;width:16px;border-radius:1px}
+.num-fmt-select{width:88px;height:20px;border:1px solid #d4d4d4;font-size:10px;border-radius:1px;padding:0 2px}
+/* ─── Formula Bar ─── */
+#fbar{height:24px;display:flex;align-items:center;border-bottom:1px solid #d4d4d4;flex-shrink:0;background:#fff}
+#name-box{width:60px;min-width:60px;height:24px;border:none;border-right:1px solid #d4d4d4;padding:0 6px;font-size:11px;text-align:center;font-family:inherit}
+#name-box:focus{outline:none;border-color:#217346}
+#fx-btn{width:28px;height:24px;border:none;background:transparent;cursor:pointer;font-size:11px;color:#666;font-style:italic;font-family:'Cambria Math',serif;display:flex;align-items:center;justify-content:center;border-right:1px solid #d4d4d4}
+#fx-btn:hover{background:#eee}
+#formula-input{flex:1;height:24px;border:none;padding:0 6px;font-size:11px;font-family:inherit}
+#formula-input:focus{outline:none}
+/* ─── Sheet Area ─── */
+#sheet-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#grid-wrap{flex:1;position:relative;overflow:hidden}
+canvas#grid-canvas{display:block;cursor:cell}
+/* ─── Sheet Tabs ─── */
+#tabs-bar{height:23px;display:flex;align-items:flex-end;border-top:1px solid #d4d4d4;background:#f0f0f0;flex-shrink:0;padding:0 4px;gap:0}
+.sheet-tab{height:20px;padding:0 12px;border:1px solid #d4d4d4;border-bottom:none;background:#e1e1e1;cursor:pointer;font-size:11px;display:flex;align-items:center;border-top-left-radius:3px;border-top-right-radius:3px;margin-right:1px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.sheet-tab.active{background:#fff;border-bottom:1px solid #fff;margin-bottom:-1px;position:relative;z-index:1}
+.sheet-tab:not(.active):hover{background:#d4d4d4}
+#add-sheet{width:22px;height:20px;border:none;background:transparent;cursor:pointer;font-size:16px;line-height:20px;color:#666;display:flex;align-items:center;justify-content:center;border-radius:2px;margin-left:4px}
+#add-sheet:hover{background:#d4d4d4}
+/* ─── Status Bar ─── */
+#statusbar{height:22px;display:flex;align-items:center;background:#217346;color:#fff;font-size:11px;padding:0 8px;flex-shrink:0;gap:16px}
+#status-left{flex:1}
+#status-stats{display:flex;gap:12px}
+#status-stats span{font-size:11px}
+#zoom-area{display:flex;align-items:center;gap:6px;margin-left:auto}
+#zoom-slider{width:80px;height:3px;accent-color:#fff}
+#zoom-val{width:32px;font-size:11px;text-align:right}
+/* ─── Context Menu ─── */
+#ctx-menu{position:fixed;background:#fff;border:1px solid #aaa;box-shadow:2px 4px 12px rgba(0,0,0,.25);z-index:9999;display:none;min-width:160px;padding:4px 0;border-radius:2px}
+.ctx-item{padding:5px 20px;font-size:11px;cursor:pointer;white-space:nowrap}
+.ctx-item:hover{background:#e5f0ff}
+.ctx-sep{height:1px;background:#e0e0e0;margin:3px 0}
+/* ─── Color Picker Popup ─── */
+#color-popup{position:fixed;background:#fff;border:1px solid #ccc;box-shadow:2px 4px 12px rgba(0,0,0,.2);z-index:9998;display:none;padding:8px;border-radius:3px;width:168px}
+.cp-row{display:flex;gap:2px;margin-bottom:2px}
+.cp-swatch{width:18px;height:18px;border:1px solid rgba(0,0,0,.15);cursor:pointer;border-radius:1px}
+.cp-swatch:hover{transform:scale(1.2);z-index:1;position:relative}
+/* ─── Autocomplete dropdown ─── */
+#autocomplete{position:fixed;background:#fff;border:1px solid #999;box-shadow:1px 2px 8px rgba(0,0,0,.2);z-index:9997;display:none;min-width:120px}
+.ac-item{padding:3px 8px;font-size:11px;cursor:pointer}
+.ac-item:hover,.ac-item.selected{background:#217346;color:#fff}
+/* ─── Resize overlay ─── */
+#col-resize-line{position:fixed;width:1px;background:#217346;z-index:9996;display:none;pointer-events:none;top:0;bottom:0}
+/* ─── Scrollbars ─── */
+#hscroll{height:15px;overflow-x:scroll;overflow-y:hidden;flex-shrink:0}
+#hscroll-inner{height:1px}
+#vscroll{width:15px;overflow-y:scroll;overflow-x:hidden;position:absolute;right:0;top:0;bottom:0}
+#vscroll-inner{width:1px}
+</style>
+</head>
+<body>
+
+<!-- Title Bar -->
+<div id="titlebar">
+  <div class="logo">
+    <svg viewBox="0 0 18 18" fill="none"><rect width="18" height="18" rx="2" fill="#fff"/><path d="M4 4h4v2H4V4zm0 3h4v2H4V7zm0 3h4v2H4v-2zm5-6h5v2H9V4zm0 3h5v2H9V7zm0 3h5v2H9v-2zm-5 3h10v2H4v-2z" fill="#217346"/></svg>
+    <span>Excel</span>
+  </div>
+  <span class="title-center" id="file-title">Book1 - Excel</span>
+  <div class="win-btns">
+    <button class="win-btn" onclick="window.location='/'">−</button>
+    <button class="win-btn" onclick="">⤢</button>
+    <button class="win-btn close" onclick="window.location='/'">✕</button>
+  </div>
+</div>
+
+<!-- Quick Access Toolbar -->
+<div id="qat">
+  <button title="Save (Ctrl+S)" onclick="saveToLocal()">💾</button>
+  <button title="Undo (Ctrl+Z)" onclick="undo()">↩</button>
+  <button title="Redo (Ctrl+Y)" onclick="redo()">↪</button>
+  <button title="Home" onclick="window.location='/'">🏠</button>
+</div>
+
+<!-- Ribbon Tabs -->
+<div id="ribbon">
+  <div id="ribbon-tabs">
+    <div class="rtab active" onclick="showTab('home')">Home</div>
+    <div class="rtab" onclick="showTab('insert')">Insert</div>
+    <div class="rtab" onclick="showTab('formulas')">Formulas</div>
+    <div class="rtab" onclick="showTab('data')">Data</div>
+    <div class="rtab" onclick="showTab('view')">View</div>
+  </div>
+  <div id="ribbon-content">
+    <!-- Home tab content -->
+    <div id="tab-home" class="rgroup-row" style="display:flex;gap:0;flex:1">
+      <!-- Clipboard -->
+      <div class="rgroup">
+        <div class="rgroup-btns">
+          <button class="rbtn" onclick="pasteData()" title="Paste (Ctrl+V)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="1.5"><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="5" y="5" width="14" height="16" rx="1"/><path d="M8 2H6a1 1 0 0 0-1 1v2h2V3h8v2h2V3a1 1 0 0 0-1-1h-2"/></svg>
+            <span>Paste</span>
+          </button>
+          <div class="sep"></div>
+          <div style="display:flex;flex-direction:column;gap:1px">
+            <button class="rbtn small" onclick="copyData()" title="Copy (Ctrl+C)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="1.5"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+              Copy
+            </button>
+            <button class="rbtn small" onclick="cutData()" title="Cut (Ctrl+X)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="1.5"><circle cx="6" cy="20" r="2"/><circle cx="6" cy="4" r="2"/><line x1="6" y1="6" x2="6" y2="18"/><path d="M20 4 6 18m14 2L12 12"/></svg>
+              Cut
+            </button>
+          </div>
+        </div>
+        <div class="rgroup-label">Clipboard</div>
+      </div>
+      <!-- Font -->
+      <div class="rgroup" style="min-width:180px">
+        <div class="rgroup-btns" style="flex-direction:column;align-items:flex-start;gap:1px">
+          <div class="font-row">
+            <input type="text" id="font-name" value="Calibri" list="font-list" onchange="applyFont(this.value)">
+            <input type="number" id="font-size" value="11" min="1" max="400" onchange="applyFontSize(this.value)" onkeydown="if(event.key==='Enter')applyFontSize(this.value)">
+          </div>
+          <div class="font-row">
+            <button class="rbtn small" id="btn-bold" onclick="toggleFmt('bold')" title="Bold (Ctrl+B)" style="font-weight:700;font-size:13px">B</button>
+            <button class="rbtn small" id="btn-italic" onclick="toggleFmt('italic')" title="Italic (Ctrl+I)" style="font-style:italic;font-size:13px">I</button>
+            <button class="rbtn small" id="btn-underline" onclick="toggleFmt('underline')" title="Underline (Ctrl+U)" style="text-decoration:underline;font-size:13px">U</button>
+            <button class="rbtn small" id="btn-strike" onclick="toggleFmt('strike')" title="Strikethrough" style="text-decoration:line-through;font-size:13px">S</button>
+            <div style="width:1px;height:16px;background:#d4d4d4;margin:0 2px"></div>
+            <button class="color-btn" id="btn-fgcolor" onclick="openColorPicker('fg',this)" title="Font Color">
+              <svg viewBox="0 0 24 24" fill="none"><text x="3" y="18" font-size="16" font-weight="bold" fill="#4a4a4a" font-family="Arial">A</text></svg>
+              <div class="color-stripe" id="fg-stripe" style="background:#ff0000"></div>
+            </button>
+            <button class="color-btn" id="btn-bgcolor" onclick="openColorPicker('bg',this)" title="Fill Color">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M7 2l10 10-3 3-7-7zm-2 14l2-2 2 2-1 2z" fill="#ffc000"/><rect x="2" y="20" width="20" height="2" fill="#ffc000"/></svg>
+              <div class="color-stripe" id="bg-stripe" style="background:#ffc000"></div>
+            </button>
+          </div>
+        </div>
+        <div class="rgroup-label">Font</div>
+      </div>
+      <!-- Alignment -->
+      <div class="rgroup">
+        <div class="rgroup-btns" style="flex-direction:column;gap:1px">
+          <div class="font-row">
+            <button class="rbtn small" id="btn-vtop" onclick="setVAlign('top')" title="Top Align">⬆</button>
+            <button class="rbtn small" id="btn-vmid" onclick="setVAlign('middle')" title="Middle Align">↕</button>
+            <button class="rbtn small" id="btn-vbot" onclick="setVAlign('bottom')" title="Bottom Align">⬇</button>
+          </div>
+          <div class="font-row">
+            <button class="rbtn small" id="btn-aleft" onclick="setHAlign('left')" title="Align Left">≡<sub style="font-size:7px">L</sub></button>
+            <button class="rbtn small" id="btn-actr" onclick="setHAlign('center')" title="Center">≡<sub style="font-size:7px">C</sub></button>
+            <button class="rbtn small" id="btn-argt" onclick="setHAlign('right')" title="Align Right">≡<sub style="font-size:7px">R</sub></button>
+            <button class="rbtn small" id="btn-wrap" onclick="toggleFmt('wrap')" title="Wrap Text">↵</button>
+          </div>
+        </div>
+        <div class="rgroup-label">Alignment</div>
+      </div>
+      <!-- Number -->
+      <div class="rgroup">
+        <div class="rgroup-btns" style="flex-direction:column;gap:2px">
+          <select class="num-fmt-select" id="num-fmt" onchange="applyNumFmt(this.value)">
+            <option value="general">General</option>
+            <option value="number">Number</option>
+            <option value="currency">Currency ($)</option>
+            <option value="percent">Percentage</option>
+            <option value="date">Short Date</option>
+            <option value="time">Time</option>
+            <option value="text">Text</option>
+          </select>
+          <div class="font-row">
+            <button class="rbtn small" onclick="applyNumFmt('currency')" title="Currency">$</button>
+            <button class="rbtn small" onclick="applyNumFmt('percent')" title="Percent">%</button>
+            <button class="rbtn small" onclick="applyNumFmt('comma')" title="Comma">,</button>
+            <button class="rbtn small" onclick="decimalInc(1)" title="Increase Decimal">.0→</button>
+            <button class="rbtn small" onclick="decimalInc(-1)" title="Decrease Decimal">←.0</button>
+          </div>
+        </div>
+        <div class="rgroup-label">Number</div>
+      </div>
+      <!-- Cells -->
+      <div class="rgroup">
+        <div class="rgroup-btns" style="flex-direction:column;gap:1px">
+          <button class="rbtn small" onclick="insertRow()" title="Insert Row">+ Row</button>
+          <button class="rbtn small" onclick="insertCol()" title="Insert Column">+ Col</button>
+          <button class="rbtn small" onclick="deleteRow()" title="Delete Row">− Row</button>
+          <button class="rbtn small" onclick="deleteCol()" title="Delete Col">− Col</button>
+        </div>
+        <div class="rgroup-label">Cells</div>
+      </div>
+      <!-- Export -->
+      <div class="rgroup">
+        <div class="rgroup-btns" style="flex-direction:column;gap:1px">
+          <button class="rbtn small" onclick="exportCSV()" title="Export CSV">📄 CSV</button>
+          <button class="rbtn small" onclick="exportXLSX()" title="Export Excel">📊 XLSX</button>
+          <button class="rbtn small" onclick="exportPDF()" title="Print/PDF">🖨 PDF</button>
+        </div>
+        <div class="rgroup-label">Export</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Formula Bar -->
+<div id="fbar">
+  <input id="name-box" value="A1" onkeydown="nameBoxKeydown(event)">
+  <button id="fx-btn" onclick="insertFxDialog()">𝑓𝑥</button>
+  <input id="formula-input" type="text" spellcheck="false"
+    oninput="formulaBarInput(this.value)"
+    onkeydown="formulaBarKeydown(event)"
+    onblur="formulaBarBlur()">
+</div>
+
+<!-- Sheet Area -->
+<div id="sheet-area">
+  <div id="grid-wrap">
+    <canvas id="grid-canvas"></canvas>
+    <div id="vscroll"><div id="vscroll-inner"></div></div>
+  </div>
+  <div id="hscroll"><div id="hscroll-inner"></div></div>
+</div>
+
+<!-- Sheet Tabs -->
+<div id="tabs-bar">
+  <button id="add-sheet" onclick="addSheet()" title="Add Sheet">+</button>
+</div>
+
+<!-- Status Bar -->
+<div id="statusbar">
+  <span id="status-left">Ready</span>
+  <div id="status-stats">
+    <span id="stat-sum"></span>
+    <span id="stat-avg"></span>
+    <span id="stat-cnt"></span>
+  </div>
+  <div id="zoom-area">
+    <span id="zoom-val">100%</span>
+    <input type="range" id="zoom-slider" min="25" max="400" value="100" oninput="setZoom(this.value)">
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="cutData()">Cut</div>
+  <div class="ctx-item" onclick="copyData()">Copy</div>
+  <div class="ctx-item" onclick="pasteData()">Paste</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="insertRow()">Insert Row</div>
+  <div class="ctx-item" onclick="insertCol()">Insert Column</div>
+  <div class="ctx-item" onclick="deleteRow()">Delete Row</div>
+  <div class="ctx-item" onclick="deleteCol()">Delete Column</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="clearSelection()">Clear Contents</div>
+</div>
+
+<!-- Color Picker -->
+<div id="color-popup"></div>
+<!-- Autocomplete -->
+<div id="autocomplete"></div>
+<div id="col-resize-line"></div>
+
+<datalist id="font-list">
+  <option value="Calibri"><option value="Arial"><option value="Times New Roman">
+  <option value="Verdana"><option value="Courier New"><option value="Georgia">
+  <option value="Trebuchet MS"><option value="Comic Sans MS">
+</datalist>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const ROW_H     = 20;
+const COL_W     = 64;
+const HDR_H     = 20;
+const HDR_W     = 40;
+const MAX_ROWS  = 1048576;
+const MAX_COLS  = 16384;
+const COLORS    = [
+  '#000000','#FFFFFF','#FF0000','#00B050','#0070C0','#FFC000','#7030A0','#FF6600',
+  '#FF0000','#FF6666','#FFAAAA','#FFD9D9',
+  '#00B050','#66D48A','#AAEAC0','#D9F5E4',
+  '#0070C0','#5AABFF','#AAD4FF','#D9ECFF',
+  '#FFC000','#FFD966','#FFE9A3','#FFF5D5',
+  '#7030A0','#B866E0','#D9AAEE','#F0D9F8',
+  '#FF6600','#FFA366','#FFCFAA','#FFE9D9',
+  '#404040','#808080','#C0C0C0','#E8E8E8',
+];
+
+// ═══════════════════════════════════════════════════════════
+//  DATA MODEL
+// ═══════════════════════════════════════════════════════════
+function defaultSheet(name){
+  return { name, cells: new Map(), colWidths: {}, rowHeights: {} };
+}
+
+let sheets = [defaultSheet('Sheet1'), defaultSheet('Sheet2'), defaultSheet('Sheet3')];
+let curSheet = 0;
+
+function sheet(){ return sheets[curSheet]; }
+function getCell(r,c){ return sheet().cells.get(`${r},${c}`)||null; }
+function setCell(r,c,obj){
+  if(!obj){ sheet().cells.delete(`${r},${c}`); return; }
+  sheet().cells.set(`${r},${c}`, obj);
+}
+
+// undo / redo stacks
+let undoStack = [], redoStack = [];
+function snapshot(){
+  const snap = sheets.map(s=>({
+    name:s.name,
+    cells: new Map(s.cells),
+    colWidths:{...s.colWidths},
+    rowHeights:{...s.rowHeights}
+  }));
+  undoStack.push({snap, curSheet, sel:{...sel}});
+  if(undoStack.length>100) undoStack.shift();
+  redoStack=[];
+}
+function undo(){
+  if(!undoStack.length) return;
+  const cur = sheets.map(s=>({name:s.name,cells:new Map(s.cells),colWidths:{...s.colWidths},rowHeights:{...s.rowHeights}}));
+  redoStack.push({snap:cur,curSheet,sel:{...sel}});
+  const {snap,curSheet:cs,sel:s} = undoStack.pop();
+  sheets = snap;
+  curSheet = cs;
+  Object.assign(sel,s);
+  renderAll();
+}
+function redo(){
+  if(!redoStack.length) return;
+  const cur = sheets.map(s=>({name:s.name,cells:new Map(s.cells),colWidths:{...s.colWidths},rowHeights:{...s.rowHeights}}));
+  undoStack.push({snap:cur,curSheet,sel:{...sel}});
+  const {snap,curSheet:cs,sel:s} = redoStack.pop();
+  sheets = snap;
+  curSheet = cs;
+  Object.assign(sel,s);
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SELECTION STATE
+// ═══════════════════════════════════════════════════════════
+let sel = { r:0, c:0, r2:0, c2:0 }; // active cell = (r,c), selection end = (r2,c2)
+let scrollRow=0, scrollCol=0, zoom=1;
+let clipboard = null, clipMode = '';
+let editing = false, editVal = '';
+let colorTarget = ''; // 'fg' or 'bg'
+let dragging = false, dragStart = null;
+let resizingCol = null, resizeStartX = 0, resizeStartW = 0;
+
+// ═══════════════════════════════════════════════════════════
+//  CANVAS
+// ═══════════════════════════════════════════════════════════
+const canvas = document.getElementById('grid-canvas');
+const ctx    = canvas.getContext('2d');
+
+let W=0, H=0; // canvas dims
+
+function resize(){
+  const wrap = document.getElementById('grid-wrap');
+  W = wrap.clientWidth - 15; // minus vscroll
+  H = wrap.clientHeight;
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  updateScrollbars();
+  draw();
+}
+
+function colWidth(c){  return (sheet().colWidths[c] ?? COL_W) * zoom; }
+function rowHeight(r){ return (sheet().rowHeights[r] ?? ROW_H) * zoom; }
+
+function colLabel(c){
+  let s='', n=c+1;
+  while(n>0){ s=String.fromCharCode(64+(n%26||26))+s; n=Math.floor((n-1)/26); }
+  return s;
+}
+function cellLabel(r,c){ return colLabel(c)+(r+1); }
+
+function colFromLabel(s){
+  s=s.toUpperCase(); let v=0;
+  for(let i=0;i<s.length;i++) v=v*26+s.charCodeAt(i)-64;
+  return v-1;
+}
+function parseRef(ref){
+  const m=ref.match(/^([A-Z]+)(\d+)$/i);
+  if(!m) return null;
+  return [parseInt(m[2])-1, colFromLabel(m[1])];
+}
+
+// x pixel → column index
+function xToCol(x){
+  let px=HDR_W;
+  for(let c=scrollCol;c<MAX_COLS;c++){
+    const w=colWidth(c);
+    if(x<px+w) return {col:c, x0:px};
+    px+=w;
+    if(px>W) break;
+  }
+  return null;
+}
+function yToRow(y){
+  let py=HDR_H;
+  for(let r=scrollRow;r<MAX_ROWS;r++){
+    const h=rowHeight(r);
+    if(y<py+h) return {row:r, y0:py};
+    py+=h;
+    if(py>H) break;
+  }
+  return null;
+}
+function cellXY(r,c){
+  let px=HDR_W, py=HDR_H;
+  for(let i=scrollCol;i<c;i++) px+=colWidth(i);
+  for(let i=scrollRow;i<r;i++) py+=rowHeight(i);
+  return {x:px,y:py};
+}
+
+// ─── draw ────────────────────────────────────────────────
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.font = `${11*zoom}px Calibri,Arial,sans-serif`;
+
+  const minR=sel.r <= sel.r2 ? sel.r : sel.r2;
+  const maxR=sel.r <= sel.r2 ? sel.r2 : sel.r;
+  const minC=sel.c <= sel.c2 ? sel.c : sel.c2;
+  const maxC=sel.c <= sel.c2 ? sel.c2 : sel.c;
+
+  // collect visible cols/rows
+  let cols=[], py=HDR_H, rows=[];
+  let px=HDR_W;
+  for(let c=scrollCol;c<MAX_COLS && px<W;c++){ cols.push({c,x:px}); px+=colWidth(c); }
+  for(let r=scrollRow;r<MAX_ROWS && py<H;r++){ rows.push({r,y:py}); py+=rowHeight(r); }
+
+  // cell backgrounds & text
+  for(const {r,y} of rows){
+    const rh = rowHeight(r);
+    for(const {c,x} of cols){
+      const cw = colWidth(c);
+      const cell=getCell(r,c);
+      const inSel = r>=minR&&r<=maxR&&c>=minC&&c<=maxC;
+
+      // bg
+      let bg = cell?.fmt?.bg || '#fff';
+      if(inSel) bg = (r===sel.r&&c===sel.c) ? '#fff' : '#c6e0ff';
+      ctx.fillStyle=bg;
+      ctx.fillRect(x,y,cw,rh);
+
+      // grid lines
+      ctx.strokeStyle='#d4d4d4';
+      ctx.lineWidth=1;
+      ctx.strokeRect(x+0.5,y+0.5,cw-1,rh-1);
+
+      if(!cell) continue;
+
+      // text
+      const val = cell.formula ? evalFormula(cell.formula,r,c) : cell.raw;
+      const disp = formatValue(val, cell.fmt?.numFmt || 'general', cell.fmt?.decimals);
+      if(disp===null||disp===undefined||disp==='') continue;
+
+      ctx.save();
+      ctx.rect(x+1,y+1,cw-2,rh-2);
+      ctx.clip();
+
+      const fg = cell.fmt?.fg || '#000';
+      let fstyle = '';
+      if(cell.fmt?.bold)   fstyle+='bold ';
+      if(cell.fmt?.italic) fstyle+='italic ';
+      const fsize = (cell.fmt?.fontSize || 11)*zoom;
+      ctx.font = `${fstyle}${fsize}px ${cell.fmt?.fontName||'Calibri'},Arial,sans-serif`;
+      ctx.fillStyle = fg;
+
+      const halign = cell.fmt?.halign || (typeof val==='number'?'right':'left');
+      const tw = ctx.measureText(String(disp)).width;
+      let tx;
+      if(halign==='center')      tx = x + cw/2 - tw/2;
+      else if(halign==='right')  tx = x + cw - 3;
+      else                       tx = x + 3;
+
+      const textY = y + rh/2 + fsize*0.35;
+      if(halign==='right') ctx.textAlign='right'; else ctx.textAlign='left';
+      ctx.fillText(String(disp), tx, textY);
+
+      if(cell.fmt?.underline){
+        ctx.strokeStyle=fg; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(tx,textY+2);
+        ctx.lineTo(tx+(halign==='right'?-tw:tw), textY+2);
+        ctx.stroke();
+      }
+      if(cell.fmt?.strike){
+        ctx.strokeStyle=fg; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(tx,textY-fsize*0.2);
+        ctx.lineTo(tx+(halign==='right'?-tw:tw), textY-fsize*0.2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  // selection border
+  if(!editing || dragging){
+    const {x:sx,y:sy}=cellXY(minR,minC);
+    let sw=0,sh=0;
+    for(let c=minC;c<=maxC;c++) sw+=colWidth(c);
+    for(let r=minR;r<=maxR;r++) sh+=rowHeight(r);
+    ctx.strokeStyle='#217346'; ctx.lineWidth=2;
+    ctx.strokeRect(sx+1,sy+1,sw-2,sh-2);
+    // fill handle
+    ctx.fillStyle='#217346';
+    const {x:ex,y:ey}=cellXY(maxR,maxC);
+    const fcx=ex+colWidth(maxC)-3, fcy=ey+rowHeight(maxR)-3;
+    ctx.fillRect(fcx,fcy,5,5);
+  }
+
+  // column headers
+  ctx.fillStyle='#f2f2f2';
+  ctx.fillRect(0,0,W,HDR_H);
+  for(const {c,x} of cols){
+    const cw=colWidth(c);
+    const inSel = c>=minC&&c<=maxC;
+    if(inSel){ ctx.fillStyle='#c7e0f4'; ctx.fillRect(x,0,cw,HDR_H); }
+    ctx.strokeStyle='#d4d4d4'; ctx.lineWidth=1;
+    ctx.strokeRect(x+0.5,0.5,cw-1,HDR_H-1);
+    ctx.fillStyle= inSel ? '#217346' : '#444';
+    ctx.font=`bold ${Math.round(10.5*zoom)}px Calibri,Arial,sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText(colLabel(c), x+cw/2, 13*zoom);
+  }
+
+  // row headers
+  ctx.fillStyle='#f2f2f2';
+  ctx.fillRect(0,0,HDR_W,H);
+  for(const {r,y} of rows){
+    const rh=rowHeight(r);
+    const inSel = r>=minR&&r<=maxR;
+    if(inSel){ ctx.fillStyle='#c7e0f4'; ctx.fillRect(0,y,HDR_W,rh); }
+    ctx.strokeStyle='#d4d4d4'; ctx.lineWidth=1;
+    ctx.strokeRect(0.5,y+0.5,HDR_W-1,rh-1);
+    ctx.fillStyle= inSel ? '#217346' : '#444';
+    ctx.font=`${Math.round(10.5*zoom)}px Calibri,Arial,sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText(String(r+1), HDR_W/2, y+rh/2+4*zoom);
+  }
+
+  // top-left corner
+  ctx.fillStyle='#f2f2f2';
+  ctx.fillRect(0,0,HDR_W,HDR_H);
+  ctx.strokeStyle='#d4d4d4'; ctx.lineWidth=1;
+  ctx.strokeRect(0.5,0.5,HDR_W-1,HDR_H-1);
+
+  // clipboard highlight
+  if(clipboard && clipMode==='copy'){
+    const {r:cr,c:cc,r2:cr2,c2:cc2}=clipboard.sel;
+    const {x:clipX,y:clipY}=cellXY(Math.min(cr,cr2),Math.min(cc,cc2));
+    let clipW=0,clipHt=0;
+    for(let c=Math.min(cc,cc2);c<=Math.max(cc,cc2);c++) clipW+=colWidth(c);
+    for(let r=Math.min(cr,cr2);r<=Math.max(cr,cr2);r++) clipHt+=rowHeight(r);
+    ctx.strokeStyle='#217346'; ctx.lineWidth=1.5;
+    ctx.setLineDash([4,4]);
+    ctx.strokeRect(clipX+1,clipY+1,clipW-2,clipHt-2);
+    ctx.setLineDash([]);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FORMULA ENGINE
+// ═══════════════════════════════════════════════════════════
+const FUNCS = {
+  SUM:(...a)=>flatNums(a).reduce((s,v)=>s+v,0),
+  AVERAGE:(...a)=>{const n=flatNums(a);return n.length?n.reduce((s,v)=>s+v,0)/n.length:0},
+  COUNT:(...a)=>flatNums(a).length,
+  COUNTA:(...a)=>flatAll(a).filter(v=>v!==''&&v!==null&&v!==undefined).length,
+  MIN:(...a)=>Math.min(...flatNums(a)),
+  MAX:(...a)=>Math.max(...flatNums(a)),
+  IF:(c,t,f='')=>c?t:f,
+  AND:(...a)=>a.every(Boolean),
+  OR:(...a)=>a.some(Boolean),
+  NOT:(v)=>!v,
+  ROUND:(v,d=0)=>parseFloat(v.toFixed(d)),
+  ROUNDUP:(v,d=0)=>Math.ceil(v*Math.pow(10,d))/Math.pow(10,d),
+  ROUNDDOWN:(v,d=0)=>Math.floor(v*Math.pow(10,d))/Math.pow(10,d),
+  ABS:(v)=>Math.abs(v),
+  SQRT:(v)=>Math.sqrt(v),
+  POWER:(b,e)=>Math.pow(b,e),
+  MOD:(a,b)=>a%b,
+  INT:(v)=>Math.floor(v),
+  LEN:(v)=>String(v??'').length,
+  UPPER:(v)=>String(v??'').toUpperCase(),
+  LOWER:(v)=>String(v??'').toLowerCase(),
+  TRIM:(v)=>String(v??'').trim(),
+  LEFT:(v,n=1)=>String(v??'').slice(0,n),
+  RIGHT:(v,n=1)=>String(v??'').slice(-n),
+  MID:(v,s,n)=>String(v??'').slice(s-1,s-1+n),
+  CONCATENATE:(...a)=>a.map(v=>v??'').join(''),
+  CONCAT:(...a)=>a.map(v=>v??'').join(''),
+  TODAY:()=>{ const d=new Date(); return dateSerial(d.getFullYear(),d.getMonth()+1,d.getDate()); },
+  NOW:()=>{ const d=new Date(); return dateSerial(d.getFullYear(),d.getMonth()+1,d.getDate())+d.getHours()/24+d.getMinutes()/1440; },
+  YEAR:(v)=>excelDateToDate(v).getFullYear(),
+  MONTH:(v)=>excelDateToDate(v).getMonth()+1,
+  DAY:(v)=>excelDateToDate(v).getDate(),
+  DATE:(y,m,d)=>dateSerial(y,m,d),
+  IFERROR:(v,e)=>(v instanceof Error?e:v),
+  ISBLANK:(v)=>v===''||v===null||v===undefined,
+  ISNUMBER:(v)=>typeof v==='number',
+  ISTEXT:(v)=>typeof v==='string',
+  VLOOKUP:(val,range,colIdx,exact)=>{
+    if(!Array.isArray(range)) return '#N/A';
+    for(const row of range){
+      const match=exact===false?(typeof row[0]==='number'&&row[0]<=val):row[0]==val;
+      if(match) return row[colIdx-1]??'#N/A';
+    }
+    return '#N/A';
+  },
+};
+
+function dateSerial(y,m,d){ return Math.floor((new Date(y,m-1,d)-new Date(1899,11,30))/86400000); }
+function excelDateToDate(n){ return new Date(new Date(1899,11,30).getTime()+n*86400000); }
+function flatNums(a){ return flatAll(a).map(v=>Number(v)).filter(v=>!isNaN(v)); }
+function flatAll(a){
+  const r=[];
+  for(const v of a){
+    if(Array.isArray(v)) v.forEach(row=>Array.isArray(row)?r.push(...row):r.push(row));
+    else r.push(v);
+  }
+  return r;
+}
+
+function evalFormula(formula, homeR, homeC){
+  if(!formula||formula[0]!=='=') return formula;
+  try{
+    const expr = formula.slice(1);
+    return evaluate(expr, homeR, homeC);
+  } catch(e){
+    return '#ERR';
+  }
+}
+
+function evaluate(expr, hr, hc){
+  // tokenise
+  const tokens = tokenize(expr);
+  let pos = 0;
+  function peek(){ return tokens[pos]; }
+  function consume(){ return tokens[pos++]; }
+
+  function parseExpr(){ return parseComparison(); }
+
+  function parseComparison(){
+    let left = parseAddSub();
+    while(peek()&&['=','<>','<=','>=','<','>'].includes(peek().val)){
+      const op = consume().val;
+      const right = parseAddSub();
+      if(op==='=') left = left==right;
+      else if(op==='<>') left = left!=right;
+      else if(op==='<=') left = left<=right;
+      else if(op==='>=') left = left>=right;
+      else if(op==='<') left = left<right;
+      else if(op==='>') left = left>right;
+    }
+    return left;
+  }
+
+  function parseAddSub(){
+    let left = parseMulDiv();
+    while(peek()&&['+','-'].includes(peek().val)&&peek().type==='op'){
+      const op = consume().val;
+      const right = parseMulDiv();
+      left = op==='+'? (Number(left)||0)+(Number(right)||0) : (Number(left)||0)-(Number(right)||0);
+    }
+    return left;
+  }
+
+  function parseMulDiv(){
+    let left = parseUnary();
+    while(peek()&&['*','/','%','&'].includes(peek().val)){
+      const op = consume().val;
+      const right = parseUnary();
+      if(op==='*') left=(Number(left)||0)*(Number(right)||0);
+      else if(op==='/') left=(Number(right)||0)?((Number(left)||0)/(Number(right)||0)):'#DIV/0!';
+      else if(op==='%') left=(Number(left)||0)%(Number(right)||0);
+      else if(op==='&') left=String(left??'')+String(right??'');
+    }
+    return left;
+  }
+
+  function parseUnary(){
+    if(peek()&&peek().val==='-'&&peek().type==='op'){ consume(); return -(Number(parsePow())||0); }
+    if(peek()&&peek().val==='+'&&peek().type==='op'){ consume(); return Number(parsePow())||0; }
+    return parsePow();
+  }
+
+  function parsePow(){
+    let left = parseAtom();
+    if(peek()&&peek().val==='^'){ consume(); left=Math.pow(Number(left)||0,Number(parseAtom())||0); }
+    return left;
+  }
+
+  function parseAtom(){
+    const t = peek();
+    if(!t) return '';
+    if(t.type==='num'){ consume(); return Number(t.val); }
+    if(t.type==='str'){ consume(); return t.val; }
+    if(t.type==='bool'){ consume(); return t.val==='TRUE'; }
+    if(t.type==='paren'&&t.val==='('){
+      consume();
+      const v=parseExpr();
+      if(peek()&&peek().val===')') consume();
+      return v;
+    }
+    if(t.type==='func'){
+      const name=t.val.toUpperCase(); consume();
+      consume(); // '('
+      const args=[];
+      while(peek()&&peek().val!==')'){
+        if(peek().val===','){consume();continue;}
+        args.push(parseExpr());
+      }
+      if(peek()) consume(); // ')'
+      const fn=FUNCS[name];
+      if(!fn) return '#NAME?';
+      try{ return fn(...args); }catch(e){ return '#ERR'; }
+    }
+    if(t.type==='range'){
+      consume();
+      return resolveRange(t.val, hr, hc);
+    }
+    if(t.type==='ref'){
+      consume();
+      return resolveCellRef(t.val, hr, hc);
+    }
+    consume(); return '';
+  }
+
+  return parseExpr();
+}
+
+function tokenize(expr){
+  const tokens=[];
+  let i=0;
+  while(i<expr.length){
+    // skip space
+    if(expr[i]===' '){i++;continue;}
+    // string
+    if(expr[i]==='"'){
+      let s='',j=i+1;
+      while(j<expr.length&&expr[j]!=='"'){ s+=expr[j++]; }
+      tokens.push({type:'str',val:s}); i=j+1; continue;
+    }
+    // number
+    if(/[0-9.]/.test(expr[i])){
+      let s=''; while(i<expr.length&&/[0-9.eE+\-]/.test(expr[i])) s+=expr[i++];
+      tokens.push({type:'num',val:s}); continue;
+    }
+    // bool or func or ref or range
+    if(/[A-Za-z_]/.test(expr[i])){
+      let s=''; while(i<expr.length&&/[A-Za-z0-9_$]/.test(expr[i])) s+=expr[i++];
+      if(s.toUpperCase()==='TRUE'||s.toUpperCase()==='FALSE'){
+        tokens.push({type:'bool',val:s.toUpperCase()}); continue;
+      }
+      // peek: if next is '(' it's a func
+      let j=i; while(j<expr.length&&expr[j]===' ') j++;
+      if(expr[j]==='('){tokens.push({type:'func',val:s});i=j;continue;}
+      // peek: range? e.g. A1:B3
+      if(expr[i]===':'){
+        let s2=''; let k=i+1;
+        while(k<expr.length&&/[A-Za-z0-9$]/.test(expr[k])) s2+=expr[k++];
+        tokens.push({type:'range',val:s+':'+s2}); i=k; continue;
+      }
+      // ref?
+      if(/^[A-Z]+\d+$/i.test(s)) tokens.push({type:'ref',val:s});
+      else tokens.push({type:'name',val:s});
+      continue;
+    }
+    // operators / parens
+    const two=expr.slice(i,i+2);
+    if(['<>','<=','>='].includes(two)){tokens.push({type:'op',val:two});i+=2;continue;}
+    tokens.push({type: '([,'.includes(expr[i])?'paren':'op', val:expr[i]}); i++;
+  }
+  return tokens;
+}
+
+function resolveCellRef(ref, hr, hc){
+  const parsed = parseRef(ref);
+  if(!parsed) return 0;
+  const [r,c]=parsed;
+  const cell=getCell(r,c);
+  if(!cell) return 0;
+  const v = cell.formula ? evalFormula(cell.formula,r,c) : cell.raw;
+  return v===''||v===null||v===undefined ? 0 : v;
+}
+
+function resolveRange(rangeStr, hr, hc){
+  const [a,b]=rangeStr.split(':');
+  const p1=parseRef(a), p2=parseRef(b);
+  if(!p1||!p2) return 0;
+  const [r1,c1]=p1, [r2,c2]=p2;
+  const result=[];
+  for(let r=r1;r<=r2;r++){
+    const row=[];
+    for(let c=c1;c<=c2;c++){
+      const cell=getCell(r,c);
+      const v=cell?(cell.formula?evalFormula(cell.formula,r,c):cell.raw):0;
+      row.push(v===''||v===null||v===undefined?0:v);
+    }
+    result.push(row);
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NUMBER FORMATTING
+// ═══════════════════════════════════════════════════════════
+function formatValue(v, fmt, decimals){
+  if(v===null||v===undefined||v==='') return '';
+  if(typeof v==='string'&&!['general','number','currency','percent','comma'].includes(fmt)) return v;
+  const n=Number(v);
+  const d=decimals??2;
+  if(fmt==='general'){
+    if(typeof v==='number'||(!isNaN(n)&&v!=='')) return String(v);
+    return String(v);
+  }
+  if(fmt==='number')   return isNaN(n)?v:n.toFixed(d);
+  if(fmt==='currency') return isNaN(n)?v:'$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  if(fmt==='percent')  return isNaN(n)?v:(n*100).toFixed(d)+'%';
+  if(fmt==='comma')    return isNaN(n)?v:n.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  if(fmt==='date')     return isNaN(n)?v:excelDateToDate(n).toLocaleDateString();
+  if(fmt==='time')     return isNaN(n)?v:excelDateToDate(n).toLocaleTimeString();
+  if(fmt==='text')     return String(v);
+  return String(v);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCROLLBARS
+// ═══════════════════════════════════════════════════════════
+function updateScrollbars(){
+  const inner = document.getElementById('hscroll-inner');
+  const vs    = document.getElementById('vscroll-inner');
+  inner.style.width  = (HDR_W + MAX_COLS*COL_W*zoom)+'px';
+  vs.style.height    = (HDR_H + MAX_ROWS*ROW_H*zoom)+'px';
+
+  const hbar = document.getElementById('hscroll');
+  hbar.scrollLeft = scrollCol*COL_W*zoom;
+  document.getElementById('vscroll').scrollTop = scrollRow*ROW_H*zoom;
+}
+
+document.getElementById('hscroll').addEventListener('scroll', e=>{
+  scrollCol = Math.floor(e.target.scrollLeft / (COL_W*zoom));
+  draw();
+});
+document.getElementById('vscroll').addEventListener('scroll', e=>{
+  scrollRow = Math.floor(e.target.scrollTop / (ROW_H*zoom));
+  draw();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  CANVAS MOUSE EVENTS
+// ═══════════════════════════════════════════════════════════
+canvas.addEventListener('mousedown', e=>{
+  closeContextMenu();
+  const rect = canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+
+  // check col resize hit area
+  if(y<HDR_H && x>HDR_W){
+    const res = findColResizeHandle(x);
+    if(res!==null){
+      resizingCol=res;
+      resizeStartX=e.clientX;
+      resizeStartW=sheet().colWidths[res]??COL_W;
+      canvas.style.cursor='col-resize';
+      return;
+    }
+  }
+
+  // select header col
+  if(y<HDR_H && x>HDR_W){
+    const col=xToCol(x);
+    if(col){
+      snapshot();
+      sel={r:0,c:col.col,r2:MAX_ROWS-1,c2:col.col};
+      renderAll();
+    }
+    return;
+  }
+  // select header row
+  if(x<HDR_W && y>HDR_H){
+    const row=yToRow(y);
+    if(row){
+      snapshot();
+      sel={r:row.row,c:0,r2:row.row,c2:MAX_COLS-1};
+      renderAll();
+    }
+    return;
+  }
+
+  if(editing) commitEdit();
+
+  const col=xToCol(x), row=yToRow(y);
+  if(!col||!row) return;
+  sel.r=row.row; sel.c=col.col;
+  if(e.shiftKey){ sel.r2=row.row; sel.c2=col.col; }
+  else { sel.r2=row.row; sel.c2=col.col; }
+  dragging=true; dragStart={r:row.row,c:col.col};
+  renderAll();
+});
+
+canvas.addEventListener('mousemove', e=>{
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+
+  if(resizingCol!==null){
+    const delta=(e.clientX-resizeStartX)/zoom;
+    sheet().colWidths[resizingCol]=Math.max(8,resizeStartW+delta);
+    updateScrollbars(); draw(); return;
+  }
+
+  if(dragging){
+    const col=xToCol(x), row=yToRow(y);
+    if(col&&row){ sel.r2=row.row; sel.c2=col.col; draw(); }
+    return;
+  }
+
+  // cursor for col resize
+  if(y<HDR_H && x>HDR_W && findColResizeHandle(x)!==null)
+    canvas.style.cursor='col-resize';
+  else canvas.style.cursor='cell';
+});
+
+canvas.addEventListener('mouseup', ()=>{
+  dragging=false;
+  if(resizingCol!==null){ resizingCol=null; canvas.style.cursor='cell'; updateScrollbars(); draw(); }
+});
+
+canvas.addEventListener('dblclick', e=>{
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  if(x<HDR_W||y<HDR_H) return;
+  startEdit();
+});
+
+canvas.addEventListener('contextmenu', e=>{
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  const col=xToCol(x), row=yToRow(y);
+  if(col&&row){ sel.r=row.row; sel.c=col.col; sel.r2=row.row; sel.c2=col.col; }
+  showContextMenu(e.clientX, e.clientY);
+});
+
+function findColResizeHandle(x){
+  let px=HDR_W;
+  for(let c=scrollCol;c<MAX_COLS&&px<W;c++){
+    const w=colWidth(c);
+    if(Math.abs(x-(px+w))<4) return c;
+    px+=w;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e=>{
+  if(document.activeElement===document.getElementById('formula-input')) return;
+  if(document.activeElement===document.getElementById('name-box')) return;
+  if(document.activeElement===document.getElementById('font-name')) return;
+  if(document.activeElement===document.getElementById('font-size')) return;
+
+  const {key,ctrlKey,shiftKey} = e;
+
+  if(ctrlKey){
+    if(key==='z'){ e.preventDefault(); undo(); return; }
+    if(key==='y'){ e.preventDefault(); redo(); return; }
+    if(key==='c'){ e.preventDefault(); copyData(); return; }
+    if(key==='x'){ e.preventDefault(); cutData(); return; }
+    if(key==='v'){ e.preventDefault(); pasteData(); return; }
+    if(key==='a'){ e.preventDefault(); sel={r:0,c:0,r2:MAX_ROWS-1,c2:MAX_COLS-1}; renderAll(); return; }
+    if(key==='b'){ e.preventDefault(); toggleFmt('bold'); return; }
+    if(key==='i'){ e.preventDefault(); toggleFmt('italic'); return; }
+    if(key==='u'){ e.preventDefault(); toggleFmt('underline'); return; }
+    if(key==='s'){ e.preventDefault(); saveToLocal(); return; }
+    if(key==='Home'){ e.preventDefault(); sel.r=0;sel.c=0;if(!shiftKey){sel.r2=0;sel.c2=0;} ensureVisible(); renderAll(); return; }
+    if(key==='End'){
+      e.preventDefault();
+      // find last used cell
+      let maxR=0,maxC=0;
+      for(const [k] of sheet().cells){ const [r,c]=k.split(',').map(Number); if(r>maxR)maxR=r; if(c>maxC)maxC=c; }
+      sel.r=maxR;sel.c=maxC;if(!shiftKey){sel.r2=maxR;sel.c2=maxC;}
+      ensureVisible(); renderAll(); return;
+    }
+  }
+
+  if(editing){
+    if(key==='Enter'){ commitEdit(); moveActive(1,0,shiftKey); return; }
+    if(key==='Tab'){  e.preventDefault(); commitEdit(); moveActive(0,1,shiftKey); return; }
+    if(key==='Escape'){ cancelEdit(); return; }
+    return;
+  }
+
+  const moves={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
+  if(moves[key]){
+    e.preventDefault();
+    const [dr,dc]=moves[key];
+    if(shiftKey){ sel.r2+=dr; sel.c2+=dc; sel.r2=Math.max(0,Math.min(MAX_ROWS-1,sel.r2)); sel.c2=Math.max(0,Math.min(MAX_COLS-1,sel.c2)); }
+    else{ sel.r+=dr; sel.c+=dc; sel.r=Math.max(0,Math.min(MAX_ROWS-1,sel.r)); sel.c=Math.max(0,Math.min(MAX_COLS-1,sel.c)); sel.r2=sel.r; sel.c2=sel.c; }
+    ensureVisible(); renderAll(); return;
+  }
+
+  if(key==='Enter')  { moveActive(1,0,shiftKey); return; }
+  if(key==='Tab')    { e.preventDefault(); moveActive(0,1,shiftKey); return; }
+  if(key==='Delete'||key==='Backspace'){ snapshot(); clearSelection(); return; }
+  if(key==='F2')     { startEdit(); return; }
+  if(key==='PageDown'){ const visible=Math.floor((H-HDR_H)/ROW_H); sel.r+=visible;sel.r2=sel.r;sel.c2=sel.c; ensureVisible(); renderAll(); return; }
+  if(key==='PageUp') { const visible=Math.floor((H-HDR_H)/ROW_H); sel.r=Math.max(0,sel.r-visible);sel.r2=sel.r;sel.c2=sel.c; ensureVisible(); renderAll(); return; }
+  if(key==='Home')   { sel.c=0;sel.c2=0; ensureVisible(); renderAll(); return; }
+  if(key==='End')    { sel.c2=sel.c; ensureVisible(); renderAll(); return; }
+
+  // start typing → start edit
+  if(key.length===1&&!ctrlKey){
+    startEdit(key);
+  }
+});
+
+function moveActive(dr,dc,shift){
+  if(shift){ sel.r2+=dr; sel.c2+=dc; }
+  else { sel.r+=dr; sel.c+=dc; sel.r2=sel.r; sel.c2=sel.c; }
+  sel.r=Math.max(0,Math.min(MAX_ROWS-1,sel.r));
+  sel.c=Math.max(0,Math.min(MAX_COLS-1,sel.c));
+  sel.r2=Math.max(0,Math.min(MAX_ROWS-1,sel.r2));
+  sel.c2=Math.max(0,Math.min(MAX_COLS-1,sel.c2));
+  ensureVisible(); renderAll();
+}
+
+function ensureVisible(){
+  const r=sel.r, c=sel.c;
+  // scroll rows
+  if(r<scrollRow) scrollRow=r;
+  else{
+    let py=HDR_H;
+    for(let i=scrollRow;i<r;i++) py+=rowHeight(i);
+    py+=rowHeight(r);
+    if(py>H){ let sum=0; for(let i=r;sum<H-HDR_H;i--){ sum+=rowHeight(i); scrollRow=i; } }
+  }
+  // scroll cols
+  if(c<scrollCol) scrollCol=c;
+  else{
+    let px=HDR_W;
+    for(let i=scrollCol;i<c;i++) px+=colWidth(i);
+    px+=colWidth(c);
+    if(px>W){ let sum=0; for(let i=c;sum<W-HDR_W;i--){ sum+=colWidth(i); scrollCol=i; } }
+  }
+  updateScrollbars();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INLINE EDITING
+// ═══════════════════════════════════════════════════════════
+let editInput=null;
+
+function startEdit(initial){
+  if(editing) return;
+  editing=true;
+  const cell=getCell(sel.r,sel.c);
+  const {x,y}=cellXY(sel.r,sel.c);
+  const cw=colWidth(sel.c), rh=rowHeight(sel.r);
+
+  editInput=document.createElement('input');
+  editInput.type='text';
+  editInput.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${cw}px;height:${rh}px;border:2px solid #217346;outline:none;padding:0 2px;font:${11*zoom}px Calibri,Arial,sans-serif;z-index:100;background:#fff;box-shadow:none`;
+  editInput.value = initial!==undefined ? initial : (cell?.formula || cell?.raw || '');
+  document.getElementById('grid-wrap').appendChild(editInput);
+  editInput.focus();
+  if(initial===undefined) editInput.select();
+
+  // sync formula bar
+  document.getElementById('formula-input').value=editInput.value;
+  editInput.addEventListener('input', ()=>{
+    document.getElementById('formula-input').value=editInput.value;
+  });
+  editInput.addEventListener('keydown', e=>{
+    if(e.key==='Enter')  { e.preventDefault(); commitEdit(); moveActive(1,0,e.shiftKey); }
+    else if(e.key==='Tab'){ e.preventDefault(); commitEdit(); moveActive(0,1,e.shiftKey); }
+    else if(e.key==='Escape'){ cancelEdit(); }
+    else if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+      if(!editInput.value.startsWith('=')){ e.preventDefault(); commitEdit(); moveActive(e.key==='ArrowUp'?-1:1,0); }
+    }
+  });
+}
+
+function commitEdit(){
+  if(!editing||!editInput) return;
+  editing=false;
+  const val=editInput.value;
+  editInput.remove(); editInput=null;
+
+  snapshot();
+  const existing=getCell(sel.r,sel.c)||{};
+  if(val===''){
+    const {formula:_f,raw:_r,...rest}=existing;
+    Object.keys(rest).length ? setCell(sel.r,sel.c,rest) : setCell(sel.r,sel.c,null);
+  } else if(val.startsWith('=')){
+    setCell(sel.r,sel.c,{...existing, formula:val, raw:''});
+  } else {
+    const n=Number(val);
+    setCell(sel.r,sel.c,{...existing, formula:undefined, raw:isNaN(n)?val:n});
+  }
+  renderAll();
+}
+
+function cancelEdit(){
+  if(!editing||!editInput) return;
+  editing=false;
+  editInput.remove(); editInput=null;
+  draw();
+}
+
+// formula bar input sync
+function formulaBarInput(v){
+  if(editInput) editInput.value=v;
+  else{
+    startEdit(v);
+    if(editInput) editInput.value=v;
+  }
+}
+function formulaBarKeydown(e){
+  if(e.key==='Enter'){ commitEdit(); moveActive(1,0); document.getElementById('grid-canvas').focus(); }
+  if(e.key==='Escape'){ cancelEdit(); document.getElementById('grid-canvas').focus(); }
+}
+function formulaBarBlur(){
+  // let mousedown on canvas handle
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SELECTION OPERATIONS
+// ═══════════════════════════════════════════════════════════
+function clearSelection(){
+  const r1=Math.min(sel.r,sel.r2), r2=Math.max(sel.r,sel.r2);
+  const c1=Math.min(sel.c,sel.c2), c2=Math.max(sel.c,sel.c2);
+  for(let r=r1;r<=r2;r++)
+    for(let c=c1;c<=c2;c++){
+      const cell=getCell(r,c);
+      if(cell){ const {raw:_,formula:__,...rest}=cell; Object.keys(rest).length?setCell(r,c,{...rest,raw:''}):setCell(r,c,null); }
+    }
+  renderAll();
+}
+
+function copyData(){
+  const r1=Math.min(sel.r,sel.r2), r2=Math.max(sel.r,sel.r2);
+  const c1=Math.min(sel.c,sel.c2), c2=Math.max(sel.c,sel.c2);
+  const data=[];
+  for(let r=r1;r<=r2;r++){
+    const row=[];
+    for(let c=c1;c<=c2;c++) row.push({...getCell(r,c)});
+    data.push(row);
+  }
+  clipboard={sel:{r:r1,c:c1,r2,c2}, data};
+  clipMode='copy';
+  draw();
+  // also copy text to system clipboard
+  const text=data.map(row=>row.map(cell=>{const v=cell?.formula||cell?.raw||''; return String(v);}).join('\t')).join('\n');
+  navigator.clipboard?.writeText(text);
+}
+
+function cutData(){
+  copyData();
+  clipMode='cut';
+  clearSelection();
+}
+
+function pasteData(){
+  if(!clipboard) return;
+  snapshot();
+  const {r:sr,c:sc,data}=clipboard;
+  for(let dr=0;dr<data.length;dr++)
+    for(let dc=0;dc<data[0].length;dc++){
+      const src=data[dr][dc];
+      if(src) setCell(sel.r+dr,sel.c+dc,{...src});
+      else setCell(sel.r+dr,sel.c+dc,null);
+    }
+  if(clipMode==='cut') clipboard=null;
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FORMATTING
+// ═══════════════════════════════════════════════════════════
+function selCells(fn){
+  snapshot();
+  const r1=Math.min(sel.r,sel.r2),r2=Math.max(sel.r,sel.r2);
+  const c1=Math.min(sel.c,sel.c2),c2=Math.max(sel.c,sel.c2);
+  for(let r=r1;r<=r2;r++)
+    for(let c=c1;c<=c2;c++){
+      const cell=getCell(r,c)||{};
+      const updated=fn({...cell});
+      setCell(r,c, (Object.keys(updated).length)?updated:null);
+    }
+  updateToolbarState();
+  draw();
+}
+
+function toggleFmt(prop){
+  const cell=getCell(sel.r,sel.c);
+  const cur=cell?.fmt?.[prop];
+  selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt[prop]=!cur; return cell; });
+}
+
+function applyFont(name){
+  selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.fontName=name; return cell; });
+}
+
+function applyFontSize(size){
+  selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.fontSize=parseInt(size)||11; return cell; });
+}
+
+function setHAlign(a){
+  selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.halign=a; return cell; });
+}
+function setVAlign(a){
+  selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.valign=a; return cell; });
+}
+
+function applyNumFmt(fmt){
+  selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.numFmt=fmt; return cell; });
+  document.getElementById('num-fmt').value=fmt;
+}
+
+function decimalInc(d){
+  selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.decimals=(cell.fmt.decimals||0)+d; if(cell.fmt.decimals<0)cell.fmt.decimals=0; return cell; });
+}
+
+function applyColor(target,color){
+  if(target==='fg'){
+    selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.fg=color; return cell; });
+    document.getElementById('fg-stripe').style.background=color;
+  } else {
+    selCells(cell=>{ cell.fmt=cell.fmt||{}; cell.fmt.bg=color; return cell; });
+    document.getElementById('bg-stripe').style.background=color;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOOLBAR STATE SYNC
+// ═══════════════════════════════════════════════════════════
+function updateToolbarState(){
+  const cell=getCell(sel.r,sel.c);
+  const fmt=cell?.fmt||{};
+  document.getElementById('btn-bold').classList.toggle('active',!!fmt.bold);
+  document.getElementById('btn-italic').classList.toggle('active',!!fmt.italic);
+  document.getElementById('btn-underline').classList.toggle('active',!!fmt.underline);
+  document.getElementById('btn-strike').classList.toggle('active',!!fmt.strike);
+  document.getElementById('btn-wrap').classList.toggle('active',!!fmt.wrap);
+  document.getElementById('font-name').value=fmt.fontName||'Calibri';
+  document.getElementById('font-size').value=fmt.fontSize||11;
+  document.getElementById('num-fmt').value=fmt.numFmt||'general';
+  // formula bar
+  const val=cell?.formula || (cell?.raw!==undefined?String(cell.raw):'');
+  document.getElementById('formula-input').value=val;
+  document.getElementById('name-box').value=cellLabel(sel.r,sel.c);
+}
+
+function updateStatusBar(){
+  const r1=Math.min(sel.r,sel.r2),r2=Math.max(sel.r,sel.r2);
+  const c1=Math.min(sel.c,sel.c2),c2=Math.max(sel.c,sel.c2);
+  const vals=[];
+  for(let r=r1;r<=r2;r++)
+    for(let c=c1;c<=c2;c++){
+      const cell=getCell(r,c);
+      if(!cell) continue;
+      const v=cell.formula?evalFormula(cell.formula,r,c):cell.raw;
+      if(v!==''&&v!==null&&v!==undefined) vals.push(v);
+    }
+  const nums=vals.map(Number).filter(v=>!isNaN(v));
+  const sum=nums.reduce((s,v)=>s+v,0);
+  const avg=nums.length?sum/nums.length:0;
+  document.getElementById('stat-sum').textContent=nums.length?`Sum: ${sum.toFixed(2)}`:'';
+  document.getElementById('stat-avg').textContent=nums.length?`Average: ${avg.toFixed(2)}`:'';
+  document.getElementById('stat-cnt').textContent=vals.length?`Count: ${vals.length}`:'';
+}
+
+function renderAll(){
+  draw();
+  updateToolbarState();
+  updateStatusBar();
+  renderTabs();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INSERT / DELETE ROWS & COLS
+// ═══════════════════════════════════════════════════════════
+function insertRow(){
+  snapshot();
+  const r=sel.r;
+  const newCells=new Map();
+  for(const [k,v] of sheet().cells){
+    const [cr,cc]=k.split(',').map(Number);
+    if(cr>=r) newCells.set(`${cr+1},${cc}`,v);
+    else newCells.set(k,v);
+  }
+  sheet().cells=newCells;
+  draw();
+}
+function deleteRow(){
+  snapshot();
+  const r=sel.r;
+  const newCells=new Map();
+  for(const [k,v] of sheet().cells){
+    const [cr,cc]=k.split(',').map(Number);
+    if(cr>r) newCells.set(`${cr-1},${cc}`,v);
+    else if(cr!==r) newCells.set(k,v);
+  }
+  sheet().cells=newCells;
+  draw();
+}
+function insertCol(){
+  snapshot();
+  const c=sel.c;
+  const newCells=new Map();
+  for(const [k,v] of sheet().cells){
+    const [cr,cc]=k.split(',').map(Number);
+    if(cc>=c) newCells.set(`${cr},${cc+1}`,v);
+    else newCells.set(k,v);
+  }
+  sheet().cells=newCells;
+  draw();
+}
+function deleteCol(){
+  snapshot();
+  const c=sel.c;
+  const newCells=new Map();
+  for(const [k,v] of sheet().cells){
+    const [cr,cc]=k.split(',').map(Number);
+    if(cc>c) newCells.set(`${cr},${cc-1}`,v);
+    else if(cc!==c) newCells.set(k,v);
+  }
+  sheet().cells=newCells;
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SHEETS
+// ═══════════════════════════════════════════════════════════
+function renderTabs(){
+  const bar=document.getElementById('tabs-bar');
+  // remove existing tabs
+  [...bar.querySelectorAll('.sheet-tab')].forEach(t=>t.remove());
+  const addBtn=document.getElementById('add-sheet');
+  sheets.forEach((s,i)=>{
+    const tab=document.createElement('div');
+    tab.className='sheet-tab'+(i===curSheet?' active':'');
+    tab.textContent=s.name;
+    tab.onclick=()=>{ curSheet=i; renderAll(); };
+    tab.ondblclick=()=>renameSheet(i,tab);
+    tab.oncontextmenu=e=>{ e.preventDefault(); sheetCtxMenu(e,i); };
+    bar.insertBefore(tab,addBtn);
+  });
+}
+
+function addSheet(){
+  const n=sheets.length+1;
+  sheets.push(defaultSheet(`Sheet${n}`));
+  curSheet=sheets.length-1;
+  renderAll();
+}
+
+function renameSheet(i,el){
+  const input=document.createElement('input');
+  input.value=sheets[i].name;
+  input.style.cssText='width:80px;font:11px Calibri;border:1px solid #217346;outline:none;padding:1px 3px';
+  el.replaceWith(input);
+  input.focus(); input.select();
+  const done=()=>{ sheets[i].name=input.value||sheets[i].name; renderTabs(); };
+  input.onblur=done;
+  input.onkeydown=e=>{ if(e.key==='Enter')done(); };
+}
+
+function sheetCtxMenu(e,i){
+  const menu=document.getElementById('ctx-menu');
+  menu.innerHTML=`
+    <div class="ctx-item" onclick="renameSheetPrompt(${i})">Rename</div>
+    <div class="ctx-item" onclick="deleteSheet(${i})">Delete</div>
+  `;
+  menu.style.display='block';
+  menu.style.left=e.clientX+'px';
+  menu.style.top=e.clientY+'px';
+}
+
+function renameSheetPrompt(i){
+  const name=prompt('Sheet name:',sheets[i].name);
+  if(name) sheets[i].name=name;
+  closeContextMenu(); renderTabs();
+}
+
+function deleteSheet(i){
+  if(sheets.length===1) return;
+  sheets.splice(i,1);
+  curSheet=Math.min(curSheet,sheets.length-1);
+  closeContextMenu(); renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONTEXT MENU
+// ═══════════════════════════════════════════════════════════
+function showContextMenu(x,y){
+  const menu=document.getElementById('ctx-menu');
+  menu.innerHTML=`
+    <div class="ctx-item" onclick="cutData()">Cut</div>
+    <div class="ctx-item" onclick="copyData()">Copy</div>
+    <div class="ctx-item" onclick="pasteData()">Paste</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="insertRow()">Insert Row</div>
+    <div class="ctx-item" onclick="insertCol()">Insert Column</div>
+    <div class="ctx-item" onclick="deleteRow()">Delete Row</div>
+    <div class="ctx-item" onclick="deleteCol()">Delete Column</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="clearSelection()">Clear Contents</div>
+  `;
+  menu.style.display='block';
+  menu.style.left=x+'px'; menu.style.top=y+'px';
+}
+function closeContextMenu(){ document.getElementById('ctx-menu').style.display='none'; }
+document.addEventListener('click', closeContextMenu);
+
+// ═══════════════════════════════════════════════════════════
+//  COLOR PICKER
+// ═══════════════════════════════════════════════════════════
+function openColorPicker(target, btn){
+  colorTarget=target;
+  const popup=document.getElementById('color-popup');
+  const rows=[];
+  for(let i=0;i<COLORS.length;i+=8){
+    const row=COLORS.slice(i,i+8).map(c=>`<div class="cp-swatch" style="background:${c}" onclick="applyColor('${target}','${c}');closeColorPicker()" title="${c}"></div>`).join('');
+    rows.push(`<div class="cp-row">${row}</div>`);
+  }
+  popup.innerHTML=rows.join('')+`<div style="margin-top:6px"><input type="color" id="cp-custom" style="width:100%;height:24px;cursor:pointer" onchange="applyColor('${target}',this.value);closeColorPicker()"></div>`;
+  const rect=btn.getBoundingClientRect();
+  popup.style.left=rect.left+'px'; popup.style.top=(rect.bottom+2)+'px';
+  popup.style.display='block';
+}
+function closeColorPicker(){ document.getElementById('color-popup').style.display='none'; }
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#color-popup')&&!e.target.closest('#btn-fgcolor')&&!e.target.closest('#btn-bgcolor'))
+    closeColorPicker();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  ZOOM
+// ═══════════════════════════════════════════════════════════
+function setZoom(v){
+  zoom=v/100;
+  document.getElementById('zoom-val').textContent=v+'%';
+  updateScrollbars(); draw();
+}
+canvas.addEventListener('wheel', e=>{
+  if(e.ctrlKey){
+    e.preventDefault();
+    const newZoom=Math.max(25,Math.min(400,Math.round(zoom*100-e.deltaY/10)));
+    zoom=newZoom/100;
+    document.getElementById('zoom-slider').value=newZoom;
+    document.getElementById('zoom-val').textContent=newZoom+'%';
+    updateScrollbars(); draw();
+  }
+},{passive:false});
+
+// ═══════════════════════════════════════════════════════════
+//  NAME BOX
+// ═══════════════════════════════════════════════════════════
+function nameBoxKeydown(e){
+  if(e.key==='Enter'){
+    const val=e.target.value.trim().toUpperCase();
+    // range?
+    if(val.includes(':')){
+      const [a,b]=val.split(':');
+      const p1=parseRef(a), p2=parseRef(b);
+      if(p1&&p2){ sel={r:p1[0],c:p1[1],r2:p2[0],c2:p2[1]}; ensureVisible(); renderAll(); }
+    } else {
+      const p=parseRef(val);
+      if(p){ sel={r:p[0],c:p[1],r2:p[0],c2:p[1]}; ensureVisible(); renderAll(); }
+    }
+    canvas.focus();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RIBBON TABS
+// ═══════════════════════════════════════════════════════════
+function showTab(name){
+  document.querySelectorAll('.rtab').forEach((t,i)=>{
+    const names=['home','insert','formulas','data','view'];
+    t.classList.toggle('active',names[i]===name);
+  });
+}
+
+function insertFxDialog(){
+  const fnList=Object.keys(FUNCS).sort();
+  const name=prompt('Function name:\n'+fnList.join(', '));
+  if(!name) return;
+  startEdit('='+name.toUpperCase()+'(');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════════════════
+function exportCSV(){
+  let maxR=0,maxC=0;
+  for(const [k] of sheet().cells){
+    const [r,c]=k.split(',').map(Number);
+    if(r>maxR)maxR=r; if(c>maxC)maxC=c;
+  }
+  const rows=[];
+  for(let r=0;r<=maxR;r++){
+    const row=[];
+    for(let c=0;c<=maxC;c++){
+      const cell=getCell(r,c);
+      const v=cell?(cell.formula?evalFormula(cell.formula,r,c):cell.raw):'';
+      const s=String(v??'').replace(/"/g,'""');
+      row.push(s.includes(',')||s.includes('"')||s.includes('\n')?`"${s}"`:s);
+    }
+    rows.push(row.join(','));
+  }
+  download(rows.join('\n'),`${sheet().name}.csv`,'text/csv');
+}
+
+function exportXLSX(){
+  // use SheetJS if available, else fallback CSV
+  if(typeof XLSX==='undefined'){
+    const script=document.createElement('script');
+    script.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+    script.onload=()=>doExportXLSX();
+    document.head.appendChild(script);
+  } else doExportXLSX();
+}
+function doExportXLSX(){
+  let maxR=0,maxC=0;
+  for(const [k] of sheet().cells){
+    const [r,c]=k.split(',').map(Number);
+    if(r>maxR)maxR=r; if(c>maxC)maxC=c;
+  }
+  const aoa=[];
+  for(let r=0;r<=maxR;r++){
+    const row=[];
+    for(let c=0;c<=maxC;c++){
+      const cell=getCell(r,c);
+      const v=cell?(cell.formula?evalFormula(cell.formula,r,c):cell.raw):'';
+      row.push(v??'');
+    }
+    aoa.push(row);
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  XLSX.utils.book_append_sheet(wb,ws,sheet().name);
+  XLSX.writeFile(wb,`${sheet().name}.xlsx`);
+}
+
+function exportPDF(){
+  window.print();
+}
+
+function download(content,filename,mime){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download=filename; a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SAVE / LOAD (localStorage)
+// ═══════════════════════════════════════════════════════════
+function saveToLocal(){
+  const data=sheets.map(s=>({
+    name:s.name,
+    cells:[...s.cells.entries()],
+    colWidths:s.colWidths,
+    rowHeights:s.rowHeights
+  }));
+  localStorage.setItem('myexcel_data',JSON.stringify({sheets:data,curSheet,sel}));
+  document.getElementById('status-left').textContent='Saved ✓';
+  setTimeout(()=>document.getElementById('status-left').textContent='Ready',2000);
+}
+
+function loadFromLocal(){
+  const raw=localStorage.getItem('myexcel_data');
+  if(!raw) return;
+  try{
+    const {sheets:d,curSheet:cs,sel:s}=JSON.parse(raw);
+    sheets=d.map(sh=>({
+      name:sh.name,
+      cells:new Map(sh.cells),
+      colWidths:sh.colWidths||{},
+      rowHeights:sh.rowHeights||{}
+    }));
+    curSheet=cs||0;
+    Object.assign(sel,s||{r:0,c:0,r2:0,c2:0});
+  }catch(e){ console.error(e); }
+}
+
+// autosave every 30s
+setInterval(saveToLocal, 30000);
+
+// ═══════════════════════════════════════════════════════════
+//  PRINT CSS
+// ═══════════════════════════════════════════════════════════
+const printStyle=document.createElement('style');
+printStyle.textContent=`
+@media print{
+  #titlebar,#qat,#ribbon,#fbar,#tabs-bar,#statusbar,#hscroll,#vscroll{display:none!important}
+  body{overflow:visible!important;height:auto!important}
+  #sheet-area{overflow:visible!important;height:auto!important}
+  #grid-wrap{overflow:visible!important;height:auto!important}
+  canvas{display:none!important}
+  #print-table{display:table!important}
+}
+#print-table{display:none;width:100%;border-collapse:collapse;font:11px Calibri,Arial,sans-serif}
+#print-table td,#print-table th{border:1px solid #ccc;padding:2px 4px;white-space:nowrap}
+`;
+document.head.appendChild(printStyle);
+
+// build print table before printing
+window.addEventListener('beforeprint',()=>{
+  let maxR=0,maxC=0;
+  for(const [k] of sheet().cells){
+    const [r,c]=k.split(',').map(Number);
+    if(r>maxR)maxR=r; if(c>maxC)maxC=c;
+  }
+  maxR=Math.min(maxR,999); maxC=Math.min(maxC,50);
+  let html='<table id="print-table">';
+  // header row
+  html+='<tr><th></th>';
+  for(let c=0;c<=maxC;c++) html+=`<th>${colLabel(c)}</th>`;
+  html+='</tr>';
+  for(let r=0;r<=maxR;r++){
+    html+=`<tr><th>${r+1}</th>`;
+    for(let c=0;c<=maxC;c++){
+      const cell=getCell(r,c);
+      const v=cell?(cell.formula?evalFormula(cell.formula,r,c):cell.raw):'';
+      html+=`<td>${v??''}</td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</table>';
+  const pt=document.getElementById('print-table');
+  if(pt) pt.remove();
+  document.getElementById('sheet-area').insertAdjacentHTML('afterend',html);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+loadFromLocal();
+window.addEventListener('resize', resize);
+resize();
+renderAll();
+canvas.setAttribute('tabindex','0');
+canvas.focus();
+</script>
+</body>
+</html>

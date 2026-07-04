@@ -57,4 +57,12 @@ export const apps: App[] = [
     icon: "video",
     tags: ["Utility", "Media"],
   },
+  {
+    id: "myexcel",
+    name: "Excel Spreadsheet",
+    description: "A full-featured spreadsheet app with formula engine, cell formatting, multiple sheets, and export to CSV, XLSX, and PDF.",
+    url: "/myexcel.html",
+    icon: "table",
+    tags: ["Utility", "Productivity"],
+  },
 ];
