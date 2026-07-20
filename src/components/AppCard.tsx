@@ -41,6 +41,19 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M13 8.5l5-2.5v7l-5-2.5" />
     </svg>
   ),
+  table: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <rect x="3" y="3" width="14" height="14" rx="2" />
+      <path d="M3 8h14M3 13h14M8 3v14" />
+    </svg>
+  ),
+  whiteboard: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <rect x="2.5" y="4" width="15" height="10" rx="1.5" />
+      <path d="M10 14v3M7 17h6" />
+      <path d="M6 9l2 2 4-4" />
+    </svg>
+  ),
 };
 
 const ICON_STYLE: Record<string, { bg: string; color: string }> = {
@@ -49,7 +62,9 @@ const ICON_STYLE: Record<string, { bg: string; color: string }> = {
   pill:      { bg: "#F0FDF4", color: "#16A34A" },
   ruler:     { bg: "#F5F3FF", color: "#7C3AED" },
   clipboard: { bg: "#F0F9FF", color: "#0284C7" },
-  video:     { bg: "#FFF7ED", color: "#EA580C" },
+  video:      { bg: "#FFF7ED", color: "#EA580C" },
+  table:      { bg: "#ECFDF5", color: "#059669" },
+  whiteboard: { bg: "#FEF2F2", color: "#E11D48" },
 };
 
 export default function AppCard({ app }: { app: App }) {

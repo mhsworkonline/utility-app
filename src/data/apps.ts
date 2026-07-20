@@ -65,4 +65,12 @@ export const apps: App[] = [
     icon: "table",
     tags: ["Utility", "Productivity"],
   },
+  {
+    id: "whiteboard",
+    name: "Whiteboard",
+    description: "An infinite pannable canvas for freehand drawing, sticky notes, text, and shapes — with pen, highlighter, eraser, and undo/redo.",
+    url: "/whiteboard.html",
+    icon: "whiteboard",
+    tags: ["Utility", "Productivity"],
+  },
 ];
