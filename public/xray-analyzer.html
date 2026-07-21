@@ -723,7 +723,7 @@
           <canvas id="overlayCanvas"></canvas>
           <div class="loading-overlay" id="loadingOverlay">
             <div class="spinner"></div>
-            <div class="loading-label" id="loadingText">ANALYZING WITH LLAMA 4 SCOUT…</div>
+            <div class="loading-label" id="loadingText">ANALYZING IMAGE…</div>
           </div>
         </div>
 
@@ -964,7 +964,7 @@ function runLocalAnalysis() {
 async function runGroqAnalysis() {
   if (!currentImage) { showError('Upload a medical image first.'); return; }
 
-  setLoading(true, 'ANALYZING WITH LLAMA 4 SCOUT…');
+  setLoading(true, 'ANALYZING IMAGE…');
   try {
     const scale = Math.min(1024 / imageCanvas.width, 1);
     const tmp   = document.createElement('canvas');

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAiSettings, logError } from "@/lib/settings";
+import { chat, extractJson } from "@/lib/providers";
 import path from "path";
 import fs from "fs";
+
+// Groq decommissioned meta-llama/llama-4-scout-17b-16e-instruct.
+// Override without a code change via the GROQ_MODEL env var.
+const DEFAULT_MODEL = "qwen/qwen3.6-27b";
 
 interface Config {
   groq_api_key: string;
@@ -58,60 +64,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing image_base64 in request body." }, { status: 400 });
   }
 
-  let config: Config;
-  try {
-    config = loadConfig();
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  // Admin panel (Supabase) is the source of truth; env/config.json are fallbacks.
+  const ai = await getAiSettings();
+  const cfg = ai.analyze;
+  let apiKey = ai.keys[cfg.provider];
+  if (!apiKey && cfg.provider === "groq") {
+    try { apiKey = loadConfig().groq_api_key; } catch { /* handled below */ }
+  }
+  if (!apiKey) {
+    const msg = `No API key configured for ${cfg.provider}. Set it in /admin.`;
+    await logError("analyze", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  const payload = {
-    model: config.model ?? "meta-llama/llama-4-scout-17b-16e-instruct",
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: PROMPT },
-          { type: "image_url", image_url: { url: `data:image/jpeg;base64,${image_base64}` } },
-        ],
-      },
-    ],
-    max_tokens: 2500,
-    temperature: 0.1,
-  };
-
-  let groqRes: Response;
+  const model = cfg.model || DEFAULT_MODEL;
+  let result;
   try {
-    groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.groq_api_key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+    result = await chat({
+      provider: cfg.provider,
+      apiKey,
+      model,
+      prompt: PROMPT,
+      image: { base64: image_base64, mime: "image/jpeg" },
+      maxTokens: cfg.max_tokens,
+      temperature: cfg.temperature,
+      // Reasoning models otherwise burn the token budget on <think> output.
+      reasoningEffort: cfg.reasoning_effort,
     });
   } catch (err) {
-    return NextResponse.json({ error: `Groq request failed: ${(err as Error).message}` }, { status: 502 });
+    const msg = (err as Error).message;
+    await logError("analyze", `[${cfg.provider}/${model}] ${msg}`);
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 
-  const groqData = await groqRes.json() as {
-    choices?: { message: { content: string } }[];
-    error?: { message: string };
-  };
-
-  if (!groqRes.ok) {
-    return NextResponse.json({ error: groqData.error?.message ?? `Groq HTTP ${groqRes.status}` }, { status: 502 });
+  const analysis = extractJson(result.text);
+  if (!analysis) {
+    const msg = result.truncated
+      ? `The model ran out of output tokens before finishing (model: ${model}). Pick a model with a larger output limit in /admin.`
+      : `Could not parse the AI response as JSON (model: ${model}).`;
+    await logError("analyze", `${msg} Raw: ${result.text.slice(0, 300)}`);
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
-
-  let content = groqData.choices?.[0]?.message?.content?.trim() ?? "";
-  content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-
-  try {
-    const analysis = JSON.parse(content);
-    return NextResponse.json(analysis);
-  } catch {
-    const match = content.match(/\{[\s\S]*\}/);
-    if (match) return NextResponse.json(JSON.parse(match[0]));
-    return NextResponse.json({ error: "Could not parse Groq response as JSON." }, { status: 502 });
-  }
+  return NextResponse.json(analysis);
 }

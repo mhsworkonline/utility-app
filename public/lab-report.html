@@ -325,7 +325,39 @@ async function extractPDFText(file) {
   return text;
 }
 
+// Full-resolution phone photos cost thousands of image tokens and blow past
+// per-minute rate limits, so downscale before upload. 1600px keeps lab-report
+// text legible for OCR while cutting the payload dramatically.
+const MAX_IMAGE_DIM = 1600;
+
 function fileToBase64(file) {
+  if (file.type && file.type.startsWith('image/')) return downscaleToBase64(file);
+  return rawBase64(file);
+}
+
+function downscaleToBase64(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(img.naturalWidth, img.naturalHeight));
+      if (scale === 1 && file.size < 900000) return rawBase64(file).then(resolve);
+      const w = Math.round(img.naturalWidth * scale);
+      const h = Math.round(img.naturalHeight * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const cx = c.getContext('2d');
+      cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h);   // flatten alpha for JPEG
+      cx.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', 0.82).split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rawBase64(file).then(resolve); };
+    img.src = url;
+  });
+}
+
+function rawBase64(file) {
   return new Promise((res, rej) => {
     const r = new FileReader();
     r.onload = () => res(r.result.split(',')[1]);
@@ -393,12 +425,55 @@ function renderResults(data) {
   document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
+/**
+ * jsPDF's built-in Helvetica only supports Latin-1 (WinAnsi). Any character
+ * above U+00FF makes jsPDF re-encode the whole string as UTF-16, which renders
+ * with broken letter-spacing AND measures the wrong width, so splitTextToSize
+ * wraps too late and the text runs off the page. Map the common typographic
+ * characters to ASCII and drop anything else outside Latin-1.
+ */
+function pdfText(s) {
+  return String(s ?? '')
+    .replace(/[‘’‚‛]/g, "'")
+    .replace(/[“”„]/g, '"')
+    .replace(/[–—−]/g, '-')
+    .replace(/→/g, '->').replace(/←/g, '<-')
+    .replace(/[•●▪·]/g, '-')
+    .replace(/≥/g, '>=').replace(/≤/g, '<=')
+    .replace(/…/g, '...')
+    .replace(/ /g, ' ')
+    .replace(/[^\x00-\xFF]/g, '');
+}
+
 function downloadPDF() {
   if (!analysisResult) return;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const M = 18, W = 210 - M*2;
+  const M = 18, W = 210 - M*2, BOTTOM = 272;
   let y = 18;
+
+  // Page-break before drawing a block of height `h` so blocks stay intact.
+  const need = (h) => { if (y + h > BOTTOM) { doc.addPage(); y = 20; } };
+
+  /** Wraps to the real width available from x to the right margin. */
+  const para = (text, { x = M, size = 8, style = 'normal', color = [74,74,80], lh = 4.6 } = {}) => {
+    doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...color);
+    const maxW = 210 - x - M;
+    doc.splitTextToSize(pdfText(text), maxW).forEach(line => {
+      need(lh);
+      doc.text(line, x, y);
+      y += lh;
+    });
+  };
+
+  /** Fits text to a column, truncating with an ellipsis rather than overflowing. */
+  const cell = (text, x, w, maxLines = 1) => {
+    const lines = doc.splitTextToSize(pdfText(text), w - 2);
+    if (lines.length <= maxLines) return lines;
+    const out = lines.slice(0, maxLines);
+    out[maxLines - 1] = out[maxLines - 1].replace(/\s*\S{0,3}$/, '...');
+    return out;
+  };
 
   doc.setFillColor(24,24,26); doc.rect(0,0,210,28,'F');
   doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(255,255,255);
@@ -421,79 +496,115 @@ function downloadPDF() {
       doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
       doc.text('PATIENT INFORMATION', M, y); y += 5;
       doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(74,74,80);
-      doc.text(fields.join('  ·  '), M, y); y += 10;
+      doc.text(pdfText(fields.join('  -  ')), M, y); y += 10;
     }
   }
 
   doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
-  doc.text(`Report Type: ${d.report_type||'—'}`, M, y); y += 10;
+  doc.text(pdfText('Report Type: '+(d.report_type||'-')), M, y); y += 10;
 
+  // Column layout: offsets and widths add up to W so nothing can bleed across.
+  const COLS = [
+    { key:'name',  label:'TEST',      x:2,   w:66 },
+    { key:'value', label:'VALUE',     x:70,  w:26 },
+    { key:'unit',  label:'UNIT',      x:98,  w:20 },
+    { key:'ref',   label:'REFERENCE', x:120, w:34 },
+    { key:'st',    label:'STATUS',    x:156, w:18 },
+  ];
+
+  const tableHeader = () => {
+    doc.setFillColor(248,247,244); doc.rect(M,y,W,7,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(100,100,110);
+    COLS.forEach(c => doc.text(c.label, M + c.x, y + 4.5));
+    y += 7;
+  };
+
+  need(20);
   doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
   doc.text('TEST RESULTS', M, y); y += 5;
-  doc.setFillColor(248,247,244); doc.rect(M,y,W,7,'F');
-  doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(100,100,110);
-  ['TEST','VALUE','UNIT','REFERENCE','STATUS'].forEach((h,i) => {
-    doc.text(h, M + [2,80,105,130,165][i], y+4.5);
-  });
-  y += 7;
+  tableHeader();
 
   (d.tests||[]).forEach(t => {
-    if (y > 270) { doc.addPage(); y = 20; }
+    doc.setFontSize(8);
     const st = (t.status||'NORMAL').toUpperCase();
     const col = st==='HIGH'?[220,38,38]:st==='LOW'?[217,119,6]:[22,163,74];
-    doc.setDrawColor(226,225,220); doc.line(M,y,M+W,y);
+
+    doc.setFont('helvetica','bold');
+    const nameLines = cell(t.name || '-', 0, COLS[0].w, 2);
+    doc.setFont('helvetica','normal');
+    const noteLines = t.note
+      ? (doc.setFontSize(7), doc.splitTextToSize(pdfText(t.note), W - 4))
+      : [];
+    doc.setFontSize(8);
+
+    const rowH = Math.max(9, nameLines.length * 4.4 + 4) + noteLines.length * 4;
+    if (y + rowH > BOTTOM) { doc.addPage(); y = 20; tableHeader(); }
+
+    doc.setDrawColor(226,225,220); doc.line(M, y, M + W, y);
+    let ty = y + 5.5;
+
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(24,24,26);
-    doc.text(t.name||'—', M+2, y+5.5);
+    nameLines.forEach((l, i) => doc.text(l, M + COLS[0].x, ty + i * 4.4));
+
     doc.setTextColor(...col);
-    doc.text(String(t.value||'—'), M+80, y+5.5);
+    doc.text(cell(String(t.value ?? '-'), 0, COLS[1].w)[0], M + COLS[1].x, ty);
+
     doc.setFont('helvetica','normal'); doc.setTextColor(74,74,80);
-    doc.text(t.unit||'—', M+105, y+5.5);
-    doc.text(t.reference_range||'—', M+130, y+5.5);
+    doc.text(cell(t.unit || '-', 0, COLS[2].w)[0], M + COLS[2].x, ty);
+    doc.text(cell(t.reference_range || '-', 0, COLS[3].w)[0], M + COLS[3].x, ty);
+
     doc.setFont('helvetica','bold'); doc.setTextColor(...col);
-    doc.text(st, M+165, y+5.5);
-    y += 9;
-    if (t.note) {
+    doc.text(cell(st, 0, COLS[4].w)[0], M + COLS[4].x, ty);
+
+    y += Math.max(9, nameLines.length * 4.4 + 4);
+
+    if (noteLines.length) {
       doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(138,138,146);
-      doc.text(t.note, M+2, y); y += 5;
+      noteLines.forEach(l => { doc.text(l, M + 2, y); y += 4; });
     }
   });
   y += 6;
 
   const section = (title, text) => {
     if (!text) return;
-    if (y > 255) { doc.addPage(); y = 20; }
+    need(16);
     doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
     doc.text(title, M, y); y += 5;
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(74,74,80);
-    doc.splitTextToSize(text, W).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M,y); y+=5; });
+    para(text, { x: M, size: 8, lh: 4.8 });
     y += 4;
   };
 
   section('AI SUMMARY', d.summary);
+
   if ((d.flags||[]).length) {
-    if (y > 250) { doc.addPage(); y = 20; }
+    need(18);
     doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(24,24,26);
     doc.text('FLAGS & CONCERNS', M, y); y += 6;
+
     d.flags.forEach(f => {
-      if (y > 265) { doc.addPage(); y = 20; }
       const finding = typeof f === 'string' ? f : f.finding;
       const significance = typeof f === 'object' ? f.significance : '';
       const action = typeof f === 'object' ? f.action : '';
-      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(24,24,26);
-      doc.splitTextToSize(`• ${finding}`, W-4).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M+2,y); y+=5; });
-      if (significance) {
-        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(74,74,80);
-        doc.splitTextToSize(significance, W-8).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M+6,y); y+=4.5; });
-      }
-      if (action) {
-        doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(69,115,217);
-        doc.splitTextToSize(`→ ${action}`, W-8).forEach(l => { if(y>270){doc.addPage();y=20;} doc.text(l,M+6,y); y+=4.5; });
-      }
+      // Keep the heading with at least the first lines of its body.
+      need(16);
+      para(`- ${finding}`, { x: M + 2, size: 8, style: 'bold', color: [24,24,26], lh: 4.8 });
+      if (significance) para(significance, { x: M + 6, size: 7.5, lh: 4.4 });
+      if (action) para(`-> ${action}`, { x: M + 6, size: 7.5, style: 'bold', color: [69,115,217], lh: 4.4 });
       y += 3;
     });
     y += 2;
   }
+
   section('RECOMMENDATIONS', d.recommendations);
+
+  // Footer with page numbers.
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(150,150,155);
+    doc.text(`Page ${p} of ${pages}`, 210 - M, 288, { align: 'right' });
+    doc.text('Lab Report Analysis - informational only', M, 288);
+  }
 
   doc.save(`lab-report-${Date.now()}.pdf`);
 }

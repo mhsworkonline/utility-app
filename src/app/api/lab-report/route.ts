@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
+import { getAiSettings, logError } from "@/lib/settings";
+import { chat, extractJson } from "@/lib/providers";
+
+// Groq decommissioned meta-llama/llama-4-scout-17b-16e-instruct.
+// Override without a code change via the GROQ_MODEL env var.
+const DEFAULT_MODEL = "qwen/qwen3.6-27b";
 
 interface Config {
   groq_api_key: string;
@@ -30,7 +36,8 @@ RULES:
 4. summary MUST be 2–4 sentences. Never leave it empty. Describe key findings and their clinical significance.
 5. recommendations MUST be a non-empty paragraph. Always give actionable next steps.
 6. flags = list every abnormal result as an object with finding, significance (what it may indicate clinically — organs, conditions, systems affected), and action (specific next step). Empty array only if everything is normal.
-7. Use "Not specified" for missing patient fields.`;
+7. Use "Not specified" for missing patient fields.
+8. Be economical: no whitespace padding, no repeated text, keep "note" short or empty.`;
 
 const BASE_SCHEMA = `{
   "patient": { "name": "string", "age": "string", "gender": "string", "date": "string", "lab_name": "string" },
@@ -78,44 +85,78 @@ export async function POST(req: NextRequest) {
   if (!type || !data)
     return NextResponse.json({ error: "Missing type or data." }, { status: 400 });
 
-  let config: Config;
-  try { config = loadConfig(); }
-  catch (err) { return NextResponse.json({ error: (err as Error).message }, { status: 500 }); }
+  // Admin panel (Supabase) is the source of truth; env/config.json are fallbacks.
+  const ai = await getAiSettings();
+  const cfg = ai.lab_report;
+  let apiKey = ai.keys[cfg.provider];
+  if (!apiKey && cfg.provider === "groq") {
+    try { apiKey = loadConfig().groq_api_key; } catch { /* handled below */ }
+  }
+  if (!apiKey) {
+    const msg = `No API key configured for ${cfg.provider}. Set it in /admin.`;
+    await logError("lab-report", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
-  const model = config.model ?? "meta-llama/llama-4-scout-17b-16e-instruct";
-  const messages = type === "image"
-    ? [{ role: "user", content: [
-        { type: "text", text: IMAGE_PROMPT },
-        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${data}` } }
-      ]}]
-    : [{ role: "user", content: TEXT_PROMPT + data }];
+  const model = cfg.model || DEFAULT_MODEL;
+  const basePrompt = type === "image" ? IMAGE_PROMPT : TEXT_PROMPT + data;
+  const image = type === "image" ? { base64: data, mime: "image/jpeg" } : undefined;
 
-  let groqRes: Response;
-  try {
-    groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${config.groq_api_key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, messages, max_tokens: 3000, temperature: 0.1 }),
+  // Dense reports can exceed the output budget. If the first attempt is cut off
+  // mid-JSON, retry once asking for a terser report rather than failing.
+  const TERSE = `\nIMPORTANT: keep the response compact — summary max 2 sentences, each significance max 1 sentence, "note" empty. The JSON must be complete and valid.`;
+
+  const attempt = (prompt: string) =>
+    chat({
+      provider: cfg.provider,
+      apiKey,
+      model,
+      prompt,
+      image,
+      maxTokens: cfg.max_tokens,
+      temperature: cfg.temperature,
+      // Reasoning models otherwise spend the whole budget on <think> output.
+      reasoningEffort: cfg.reasoning_effort,
     });
-  } catch (err) {
-    return NextResponse.json({ error: `Groq request failed: ${(err as Error).message}` }, { status: 502 });
-  }
 
-  const groqData = await groqRes.json() as {
-    choices?: { message: { content: string } }[];
-    error?: { message: string };
-  };
-  if (!groqRes.ok)
-    return NextResponse.json({ error: groqData.error?.message ?? `Groq HTTP ${groqRes.status}` }, { status: 502 });
-
-  let content = groqData.choices?.[0]?.message?.content?.trim() ?? "";
-  content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-
+  let result;
   try {
-    return NextResponse.json(JSON.parse(content));
-  } catch {
-    const match = content.match(/\{[\s\S]*\}/);
-    if (match) return NextResponse.json(JSON.parse(match[0]));
-    return NextResponse.json({ error: "Could not parse AI response as JSON." }, { status: 502 });
+    result = await attempt(basePrompt);
+    if (result.truncated && !extractJson(result.text)) {
+      result = await attempt(basePrompt + TERSE);
+    }
+  } catch (err) {
+    const msg = (err as Error).message;
+    await logError("lab-report", `[${cfg.provider}/${model}] ${msg}`);
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
+
+  const parsed = extractJson(result.text);
+  if (!parsed) {
+    const msg = result.truncated
+      ? `The report was too long for this model's output limit (${model}, ${cfg.max_tokens} tokens). Increase the limit or switch to a larger model in /admin.`
+      : `Could not parse the AI response as JSON (model: ${model}).`;
+    await logError("lab-report", `${msg} Raw: ${result.text.slice(0, 300)}`);
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
+
+  return NextResponse.json(normalizeReport(parsed));
+}
+
+/** Models return statuses like "Low"/"Positive"; the UI only styles NORMAL/HIGH/LOW. */
+function normalizeStatus(status: unknown, value: unknown): "NORMAL" | "HIGH" | "LOW" {
+  const s = String(status ?? "").toUpperCase().trim();
+  if (s === "HIGH" || s === "LOW" || s === "NORMAL") return s;
+  const both = `${s} ${String(value ?? "").toUpperCase()}`;
+  if (/NOT\s*DETECTED|NON.?REACTIVE|NEGATIVE|ABSENT/.test(both)) return "NORMAL";
+  if (/DETECTED|REACTIVE|POSITIVE|PRESENT|ABNORMAL|ELEVATED|ABOVE/.test(both)) return "HIGH";
+  if (/BELOW|DECREASED|DEFICIENT/.test(both)) return "LOW";
+  return "NORMAL";
+}
+
+function normalizeReport(report: unknown) {
+  const r = report as { tests?: { status?: unknown; value?: unknown }[] };
+  if (Array.isArray(r?.tests))
+    for (const t of r.tests) t.status = normalizeStatus(t.status, t.value);
+  return r;
 }

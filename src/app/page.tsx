@@ -1,7 +1,11 @@
 import AppCard from "@/components/AppCard";
-import { apps } from "@/data/apps";
+import { getApps } from "@/data/apps";
 
-export default function Home() {
+// Catalog is managed from /admin, so render at request time.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const apps = await getApps();
   return (
     <main className="flex-1 bg-surface">
       {/* Hero */}

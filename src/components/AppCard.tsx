@@ -71,6 +71,29 @@ export default function AppCard({ app }: { app: App }) {
   const iconKey = app.icon ?? "";
   const iconStyle = ICON_STYLE[iconKey];
   const iconNode = ICONS[iconKey];
+  const underMaintenance = app.status === "maintenance";
+
+  if (underMaintenance) {
+    return (
+      <div className="flex flex-col bg-surface-raised border border-surface-border rounded-xl shadow-card overflow-hidden min-h-[11rem] opacity-70 cursor-not-allowed">
+        <div className="flex flex-col flex-1 gap-2 p-5">
+          {iconNode && iconStyle && (
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mb-0.5"
+              style={{ backgroundColor: iconStyle.bg, color: iconStyle.color }}
+            >
+              {iconNode}
+            </div>
+          )}
+          <h2 className="text-lg font-semibold text-ink leading-snug">{app.name}</h2>
+          <p className="text-sm text-ink-muted leading-relaxed flex-1">{app.description}</p>
+          <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-sm bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+            Under maintenance
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <a
