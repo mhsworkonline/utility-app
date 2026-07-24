@@ -25,6 +25,7 @@ export const fallbackApps: App[] = [
   { id: "video-downloader", name: "Video Downloader", description: "Paste a YouTube, Instagram, or Facebook video URL to download as MP4 (360p–1080p) or MP3. Max 100 MB.", url: "/video-downloader.html", icon: "video", tags: ["Utility", "Media"] },
   { id: "myexcel", name: "Excel Spreadsheet", description: "A full-featured spreadsheet app with formula engine, cell formatting, multiple sheets, and export to CSV, XLSX, and PDF.", url: "/myexcel.html", icon: "table", tags: ["Utility", "Productivity"] },
   { id: "whiteboard", name: "Whiteboard", description: "An infinite pannable canvas for freehand drawing, sticky notes, text, and shapes — with pen, highlighter, eraser, and undo/redo.", url: "/whiteboard.html", icon: "whiteboard", tags: ["Utility", "Productivity"] },
+  { id: "screen-recorder", name: "Screen Recorder", description: "Record your screen, window, or tab with optional mic and system audio — then preview and download. Runs entirely in your browser, nothing is uploaded.", url: "/screen-recorder.html", icon: "record", tags: ["Utility", "Media"] },
 ];
 
 /** Server-side catalog fetch. Hidden apps are never returned to the homepage. */

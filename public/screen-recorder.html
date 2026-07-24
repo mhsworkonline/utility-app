@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Screen Recorder</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F4F0;--surface:#FFFFFF;--surface-alt:#F8F7F4;--border:#E2E1DC;
+  --text-dark:#18181A;--text-mid:#4A4A50;--text-muted:#8A8A92;
+  --brand:#4573D9;--brand-light:#EEF2FB;--rec:#DC2626;--rec-bg:#FEF2F2;
+  --ok:#16A34A;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow:0 1px 4px rgba(0,0,0,.06);--shadow-lg:0 4px 20px rgba(0,0,0,.08);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem}
+.page{max-width:760px;margin:0 auto}
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-muted);text-decoration:none;letter-spacing:.03em;margin-bottom:14px}
+.back-link:hover{color:var(--brand)}
+.header{margin-bottom:1.75rem}
+.header-eyebrow{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+.header-title{font-size:24px;font-weight:600;letter-spacing:-.01em;margin-bottom:4px}
+.header-sub{font-size:14px;color:var(--text-muted);line-height:1.5}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:1.5rem;margin-bottom:1.25rem}
+
+/* Options */
+.opts{display:flex;flex-direction:column;gap:2px;margin-bottom:1.25rem}
+.opt{display:flex;align-items:center;justify-content:space-between;padding:12px 4px}
+.opt+.opt{border-top:1px solid var(--border)}
+.opt-info{display:flex;align-items:center;gap:12px}
+.opt-ico{width:38px;height:38px;border-radius:10px;background:var(--surface-alt);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.opt-ico svg{width:20px;height:20px;fill:none;stroke:var(--text-mid);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.opt-txt-title{font-size:14px;font-weight:600}
+.opt-txt-sub{font-size:12px;color:var(--text-muted);margin-top:1px}
+.switch{position:relative;width:44px;height:24px;flex-shrink:0;cursor:pointer}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch .track{position:absolute;inset:0;background:#CFCEC9;border-radius:24px;transition:background .18s}
+.switch .thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .18s}
+.switch input:checked+.track{background:var(--brand)}
+.switch input:checked+.track+.thumb{left:23px}
+
+/* Format selector */
+.fmt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px;border-top:1px solid var(--border);margin-bottom:1.25rem}
+.fmt-label .opt-txt-title{font-size:14px;font-weight:600}
+.fmt-label .opt-txt-sub{font-size:12px;color:var(--text-muted);margin-top:1px}
+.seg{display:inline-flex;background:var(--surface-alt);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;flex-shrink:0}
+.seg button{border:none;background:transparent;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-mid);padding:7px 16px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s}
+.seg button.active{background:var(--surface);color:var(--text-dark);box-shadow:var(--shadow)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+
+/* Big record button */
+.rec-btn{width:100%;padding:15px;background:var(--rec);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:filter .18s,opacity .18s}
+.rec-btn:hover{filter:brightness(.94)}
+.rec-btn:disabled{opacity:.45;cursor:not-allowed}
+.rec-btn .dot{width:12px;height:12px;border-radius:50%;background:#fff}
+
+/* Recording state */
+.live{display:none;flex-direction:column;gap:16px}
+.live.show{display:flex}
+.live-status{display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:600}
+.live-status .pulse{width:12px;height:12px;border-radius:50%;background:var(--rec);animation:pulse 1.2s ease-in-out infinite}
+.live-status.paused .pulse{background:var(--text-muted);animation:none}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.timer{font-size:42px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.live-controls{display:flex;gap:10px}
+.ctrl{flex:1;padding:13px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;background:var(--surface);color:var(--text-dark);transition:background .15s}
+.ctrl:hover{background:var(--surface-alt)}
+.ctrl.stop{background:var(--text-dark);color:#fff;border-color:var(--text-dark)}
+.ctrl.stop:hover{filter:brightness(1.15)}
+
+/* Countdown overlay */
+.count{position:fixed;inset:0;background:rgba(24,24,26,.82);display:none;align-items:center;justify-content:center;z-index:50}
+.count.show{display:flex}
+.count-num{font-size:140px;font-weight:800;color:#fff;line-height:1;animation:pop .9s ease-out}
+@keyframes pop{0%{transform:scale(.4);opacity:0}40%{transform:scale(1);opacity:1}100%{transform:scale(1.15);opacity:0}}
+
+/* Result */
+.result{display:none}
+.result.show{display:block}
+.result video{width:100%;border-radius:12px;background:#000;display:block;margin-bottom:16px;max-height:420px}
+.result-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-muted);margin-bottom:16px}
+.result-meta b{color:var(--text-dark);font-weight:600}
+.result-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-dark);transition:background .15s}
+.btn:hover{background:var(--surface-alt)}
+.btn.primary{background:var(--brand);color:#fff;border-color:var(--brand);flex:1;min-width:180px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary:hover{filter:brightness(.95);background:var(--brand)}
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Error / unsupported */
+.notice{display:none;padding:14px 18px;border-radius:10px;font-size:13px;line-height:1.55;margin-bottom:1.25rem}
+.notice.show{display:block}
+.notice.err{background:var(--rec-bg);border:1px solid #FECACA;color:#991B1B}
+.notice.warn{background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #F59E0B;color:#92400E}
+
+.hint{font-size:12px;color:var(--text-muted);line-height:1.6;margin-top:14px;text-align:center}
+
+/* Unsupported full card */
+.unsupported{display:none;text-align:center;padding:2.5rem 1.5rem}
+.unsupported.show{display:block}
+.unsupported .u-ico{font-size:40px;margin-bottom:12px}
+.unsupported h2{font-size:18px;margin-bottom:8px}
+.unsupported p{font-size:14px;color:var(--text-muted);line-height:1.6;max-width:420px;margin:0 auto}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back-link" href="/">← All apps</a>
+  <div class="header">
+    <div class="header-eyebrow">Capture · Preview · Download</div>
+    <h1 class="header-title">Screen Recorder</h1>
+    <p class="header-sub">Record your screen, a window, or a browser tab. Everything runs in your browser — nothing is uploaded.</p>
+  </div>
+
+  <!-- Unsupported -->
+  <div class="card unsupported" id="unsupported">
+    <div class="u-ico">🖥️</div>
+    <h2>Desktop browser required</h2>
+    <p>Screen recording isn't available in this browser. Open this page in the latest Chrome, Edge, or Firefox on a desktop computer.</p>
+  </div>
+
+  <!-- Main -->
+  <div id="app">
+    <div class="notice err" id="error"></div>
+
+    <!-- Idle: options + record -->
+    <div class="card" id="setup">
+      <div class="opts">
+        <div class="opt">
+          <div class="opt-info">
+            <div class="opt-ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/></svg></div>
+            <div><div class="opt-txt-title">Microphone</div><div class="opt-txt-sub">Record your voice</div></div>
+          </div>
+          <label class="switch"><input type="checkbox" id="opt-mic"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div class="opt">
+          <div class="opt-info">
+            <div class="opt-ico"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14"/></svg></div>
+            <div><div class="opt-txt-title">System / tab audio</div><div class="opt-txt-sub">Sound from the screen you share</div></div>
+          </div>
+          <label class="switch"><input type="checkbox" id="opt-sys"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+      </div>
+      <div class="fmt-row">
+        <div class="fmt-label">
+          <div class="opt-txt-title">Format</div>
+          <div class="opt-txt-sub" id="fmtSub">Choose the output file type</div>
+        </div>
+        <div class="seg" id="fmtSeg">
+          <button type="button" data-fmt="mp4">MP4</button>
+          <button type="button" data-fmt="webm">WebM</button>
+        </div>
+      </div>
+      <button class="rec-btn" id="startBtn"><span class="dot"></span> Start recording</button>
+      <p class="hint">You'll be asked which screen, window, or tab to share. To capture tab or system sound, tick "Share audio" in that prompt.</p>
+    </div>
+
+    <!-- Recording -->
+    <div class="card live" id="live">
+      <div class="live-status" id="liveStatus"><span class="pulse"></span> <span id="statusText">Recording</span></div>
+      <div class="timer" id="timer">00:00</div>
+      <div class="live-controls">
+        <button class="ctrl" id="pauseBtn">Pause</button>
+        <button class="ctrl stop" id="stopBtn">Stop</button>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="card result" id="result">
+      <video id="preview" controls playsinline></video>
+      <div class="result-meta">
+        <span>Duration <b id="metaDur">—</b></span>
+        <span>Size <b id="metaSize">—</b></span>
+        <span>Format <b id="metaFmt">—</b></span>
+      </div>
+      <div class="result-actions">
+        <button class="btn primary" id="downloadBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> <span id="downloadLabel">Download</span></button>
+        <button class="btn" id="againBtn">Record again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="count" id="count"><div class="count-num" id="countNum">3</div></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && window.MediaRecorder);
+
+if (!supported) {
+  $('unsupported').classList.add('show');
+  $('app').style.display = 'none';
+}
+
+let mediaRecorder = null, chunks = [], displayStream = null, micStream = null, audioCtx = null;
+let startTime = 0, pausedMs = 0, pauseStart = 0, timerId = null, blobUrl = null;
+let mimeType = '', container = 'webm', selectedFmt = 'webm';
+
+function showError(msg){ const e=$('error'); e.textContent=msg; e.classList.add('show'); }
+function clearError(){ $('error').classList.remove('show'); }
+
+// MediaRecorder emits whichever container the browser can encode. Chrome/Edge/
+// Safari can record MP4 (H.264/AAC) directly, so no post-conversion is needed;
+// where MP4 isn't supported we fall back to WebM (VP9/Opus).
+function mimeCandidates(fmt){
+  return fmt === 'mp4'
+    ? ['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4;codecs=avc1,mp4a','video/mp4;codecs=avc1','video/mp4']
+    : ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm;codecs=vp9','video/webm'];
+}
+function pickMime(fmt){
+  return mimeCandidates(fmt).find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+}
+const MP4_SUPPORTED = supported && !!pickMime('mp4');
+
+function initFormat(){
+  selectedFmt = MP4_SUPPORTED ? 'mp4' : 'webm';
+  const seg = $('fmtSeg');
+  seg.querySelectorAll('button').forEach(b => {
+    const f = b.dataset.fmt;
+    if (f === 'mp4' && !MP4_SUPPORTED){ b.disabled = true; b.title = 'MP4 recording is not supported in this browser'; }
+    b.classList.toggle('active', f === selectedFmt);
+    b.addEventListener('click', () => {
+      if (b.disabled) return;
+      selectedFmt = f;
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    });
+  });
+  $('fmtSub').textContent = MP4_SUPPORTED
+    ? 'MP4 records natively — no conversion, no upload.'
+    : 'This browser can only record WebM. WebM plays everywhere and uploads fine.';
+}
+
+function fmtTime(ms){
+  const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  const mm = String(m).padStart(2,'0'), ss = String(sec).padStart(2,'0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+function fmtSize(b){
+  if (b >= 1e9) return (b/1e9).toFixed(2)+' GB';
+  if (b >= 1e6) return (b/1e6).toFixed(1)+' MB';
+  return Math.max(1,Math.round(b/1e3))+' KB';
+}
+
+function updateTimer(){
+  const elapsed = Date.now() - startTime - pausedMs;
+  $('timer').textContent = fmtTime(elapsed);
+}
+
+function countdown(n){
+  return new Promise(resolve => {
+    const overlay = $('count'), num = $('countNum');
+    overlay.classList.add('show');
+    const tick = () => {
+      if (n <= 0){ overlay.classList.remove('show'); resolve(); return; }
+      num.textContent = n;
+      num.style.animation = 'none'; void num.offsetWidth; num.style.animation = '';
+      n--; setTimeout(tick, 900);
+    };
+    tick();
+  });
+}
+
+async function start(){
+  clearError();
+  const wantMic = $('opt-mic').checked;
+  const wantSys = $('opt-sys').checked;
+
+  // 1. Screen — request before countdown so the OS gesture is honoured.
+  try {
+    displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: { ideal: 30 } },
+      audio: wantSys
+    });
+  } catch (err) {
+    if (err && err.name === 'NotAllowedError') return; // user cancelled the picker
+    showError('Could not start screen capture: ' + (err && err.message || err));
+    return;
+  }
+
+  // 2. Microphone (optional).
+  micStream = null;
+  if (wantMic){
+    try { micStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (err) {
+      showError('Microphone unavailable — recording screen without it. (' + (err && err.name || 'error') + ')');
+    }
+  }
+
+  // 3. Combine tracks. MediaRecorder only records ONE audio track, so when both
+  //    system audio and the mic are present they must be mixed into a single
+  //    track via the Web Audio API — otherwise the mic is silently dropped.
+  const sysTracks = displayStream.getAudioTracks();
+  const micTracks = micStream ? micStream.getAudioTracks() : [];
+  let audioTrack = null;
+
+  if (sysTracks.length && micTracks.length){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch(e){} }
+    const dest = audioCtx.createMediaStreamDestination();
+    audioCtx.createMediaStreamSource(new MediaStream(sysTracks)).connect(dest);
+    audioCtx.createMediaStreamSource(new MediaStream(micTracks)).connect(dest);
+    audioTrack = dest.stream.getAudioTracks()[0];
+  } else {
+    audioTrack = sysTracks[0] || micTracks[0] || null;
+  }
+
+  const combined = new MediaStream([
+    ...displayStream.getVideoTracks(),
+    ...(audioTrack ? [audioTrack] : []),
+  ]);
+
+  // If the user clicks the browser's native "Stop sharing", finish cleanly.
+  displayStream.getVideoTracks()[0].addEventListener('ended', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  });
+
+  await countdown(3);
+
+  // 4. Record. Honour the chosen format, falling back to WebM if the selected
+  //    codec is unavailable at record time.
+  mimeType = pickMime(selectedFmt) || pickMime('webm') || '';
+  container = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+  chunks = [];
+  try {
+    mediaRecorder = new MediaRecorder(combined, { mimeType });
+  } catch (err) {
+    showError('Recorder failed to start: ' + (err && err.message || err));
+    stopAllTracks(); return;
+  }
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mediaRecorder.onstop = finish;
+  mediaRecorder.start(1000);
+
+  startTime = Date.now(); pausedMs = 0; pauseStart = 0;
+  timerId = setInterval(updateTimer, 250); updateTimer();
+
+  $('setup').style.display = 'none';
+  $('result').classList.remove('show');
+  $('live').classList.add('show');
+  $('liveStatus').classList.remove('paused');
+  $('statusText').textContent = 'Recording';
+  $('pauseBtn').textContent = 'Pause';
+}
+
+function togglePause(){
+  if (!mediaRecorder) return;
+  if (mediaRecorder.state === 'recording'){
+    mediaRecorder.pause(); pauseStart = Date.now();
+    $('liveStatus').classList.add('paused'); $('statusText').textContent = 'Paused'; $('pauseBtn').textContent = 'Resume';
+  } else if (mediaRecorder.state === 'paused'){
+    mediaRecorder.resume(); pausedMs += Date.now() - pauseStart;
+    $('liveStatus').classList.remove('paused'); $('statusText').textContent = 'Recording'; $('pauseBtn').textContent = 'Pause';
+  }
+}
+
+function stop(){ if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
+
+function stopAllTracks(){
+  if (displayStream) displayStream.getTracks().forEach(t => t.stop());
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  if (audioCtx){ try { audioCtx.close(); } catch(e){} audioCtx = null; }
+  displayStream = micStream = null;
+}
+
+function finish(){
+  clearInterval(timerId); timerId = null;
+  const elapsed = Date.now() - startTime - pausedMs;
+  stopAllTracks();
+
+  const blob = new Blob(chunks, { type: (mimeType.split(';')[0]) || 'video/webm' });
+  if (blobUrl) URL.revokeObjectURL(blobUrl);
+  blobUrl = URL.createObjectURL(blob);
+
+  $('preview').src = blobUrl;
+  $('metaDur').textContent = fmtTime(elapsed);
+  $('metaSize').textContent = fmtSize(blob.size);
+  $('metaFmt').textContent = container.toUpperCase();
+  $('downloadLabel').textContent = 'Download .' + container;
+
+  $('live').classList.remove('show');
+  $('result').classList.add('show');
+}
+
+function download(){
+  if (!blobUrl) return;
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  a.href = blobUrl; a.download = `recording-${ts}.${container}`; a.click();
+}
+
+function reset(){
+  if (blobUrl){ URL.revokeObjectURL(blobUrl); blobUrl = null; }
+  $('preview').removeAttribute('src'); $('preview').load();
+  $('result').classList.remove('show');
+  $('setup').style.display = '';
+  clearError();
+}
+
+if (supported){
+  initFormat();
+  $('startBtn').addEventListener('click', start);
+  $('pauseBtn').addEventListener('click', togglePause);
+  $('stopBtn').addEventListener('click', stop);
+  $('downloadBtn').addEventListener('click', download);
+  $('againBtn').addEventListener('click', reset);
+}
+</script>
+</body>
+</html>

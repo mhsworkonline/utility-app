@@ -54,6 +54,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M6 9l2 2 4-4" />
     </svg>
   ),
+  record: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <rect x="2" y="5" width="16" height="11" rx="2" />
+      <circle cx="10" cy="10.5" r="2.5" />
+    </svg>
+  ),
 };
 
 const ICON_STYLE: Record<string, { bg: string; color: string }> = {
@@ -65,6 +71,7 @@ const ICON_STYLE: Record<string, { bg: string; color: string }> = {
   video:      { bg: "#FFF7ED", color: "#EA580C" },
   table:      { bg: "#ECFDF5", color: "#059669" },
   whiteboard: { bg: "#FEF2F2", color: "#E11D48" },
+  record:     { bg: "#FEF2F2", color: "#DC2626" },
 };
 
 export default function AppCard({ app }: { app: App }) {
