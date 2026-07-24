@@ -153,6 +153,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
           <button type="button" data-fmt="webm">WebM</button>
         </div>
       </div>
+      <div class="fmt-row">
+        <div class="fmt-label">
+          <div class="opt-txt-title">Quality</div>
+          <div class="opt-txt-sub" id="qualSub">Lower quality = smaller file</div>
+        </div>
+        <div class="seg" id="qualSeg">
+          <button type="button" data-q="low">Low</button>
+          <button type="button" data-q="balanced">Balanced</button>
+          <button type="button" data-q="high">High</button>
+        </div>
+      </div>
       <button class="rec-btn" id="startBtn"><span class="dot"></span> Start recording</button>
       <p class="hint">You'll be asked which screen, window, or tab to share. To capture tab or system sound, tick "Share audio" in that prompt.</p>
     </div>
@@ -197,7 +208,15 @@ if (!supported) {
 
 let mediaRecorder = null, chunks = [], displayStream = null, micStream = null, audioCtx = null;
 let startTime = 0, pausedMs = 0, pauseStart = 0, timerId = null, blobUrl = null;
-let mimeType = '', container = 'webm', selectedFmt = 'webm';
+let mimeType = '', container = 'webm', selectedFmt = 'webm', selectedQual = 'balanced';
+
+// Bitrate presets. MediaRecorder defaults to ~2.5 Mbps; screen content compresses
+// well, so "Balanced" roughly halves that and "Low" is smaller still.
+const QUALITY = {
+  low:      { v: 800e3,  a: 64e3,  fps: 15, mbPerMin: 6.5 },
+  balanced: { v: 1500e3, a: 128e3, fps: 24, mbPerMin: 12  },
+  high:     { v: 4000e3, a: 128e3, fps: 30, mbPerMin: 31  },
+};
 
 function showError(msg){ const e=$('error'); e.textContent=msg; e.classList.add('show'); }
 function clearError(){ $('error').classList.remove('show'); }
@@ -231,6 +250,20 @@ function initFormat(){
   $('fmtSub').textContent = MP4_SUPPORTED
     ? 'MP4 records natively — no conversion, no upload.'
     : 'This browser can only record WebM. WebM plays everywhere and uploads fine.';
+}
+
+function initQuality(){
+  const seg = $('qualSeg');
+  const setSub = () => { $('qualSub').textContent = `Lower quality = smaller file · ~${QUALITY[selectedQual].mbPerMin} MB per minute`; };
+  seg.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.q === selectedQual);
+    b.addEventListener('click', () => {
+      selectedQual = b.dataset.q;
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      setSub();
+    });
+  });
+  setSub();
 }
 
 function fmtTime(ms){
@@ -269,9 +302,10 @@ async function start(){
   const wantSys = $('opt-sys').checked;
 
   // 1. Screen — request before countdown so the OS gesture is honoured.
+  const q = QUALITY[selectedQual] || QUALITY.balanced;
   try {
     displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: { ideal: 30 } },
+      video: { frameRate: { ideal: q.fps } },
       audio: wantSys
     });
   } catch (err) {
@@ -325,7 +359,11 @@ async function start(){
   container = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
   chunks = [];
   try {
-    mediaRecorder = new MediaRecorder(combined, { mimeType });
+    mediaRecorder = new MediaRecorder(combined, {
+      mimeType,
+      videoBitsPerSecond: q.v,
+      audioBitsPerSecond: q.a,
+    });
   } catch (err) {
     showError('Recorder failed to start: ' + (err && err.message || err));
     stopAllTracks(); return;
@@ -401,6 +439,7 @@ function reset(){
 
 if (supported){
   initFormat();
+  initQuality();
   $('startBtn').addEventListener('click', start);
   $('pauseBtn').addEventListener('click', togglePause);
   $('stopBtn').addEventListener('click', stop);
