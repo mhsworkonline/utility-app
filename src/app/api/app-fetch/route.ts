@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import gplay from "google-play-scraper";
 
+// Never cache: Apple's iTunes CDN and Next's data cache both hold stale results
+// for hours, which is why refreshes showed old versions/dates.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 const IOS_TIMEOUT = 15000;
+
+// A per-request cache-buster defeats Apple's edge cache (the URL becomes unique).
+function bust() {
+  return `_cb=${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+const NO_STORE: RequestInit = { cache: "no-store", headers: { "Cache-Control": "no-cache" } };
 
 function normalize(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -61,16 +73,16 @@ interface AndroidApp {
 }
 
 async function fetchIosByArtistId(artistId: string): Promise<IosApp[]> {
-  const url = `https://itunes.apple.com/lookup?id=${artistId}&entity=software&limit=200&country=us`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(IOS_TIMEOUT) });
+  const url = `https://itunes.apple.com/lookup?id=${artistId}&entity=software&limit=200&country=us&${bust()}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(IOS_TIMEOUT), ...NO_STORE });
   if (!res.ok) return [];
   const { results = [] } = await res.json();
   return results.filter((r: IosApp) => r.wrapperType === "software");
 }
 
 async function fetchIosByDevName(devName: string): Promise<IosApp[]> {
-  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(devName)}&entity=software&attribute=softwareDeveloper&limit=200&country=us`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(IOS_TIMEOUT) });
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(devName)}&entity=software&attribute=softwareDeveloper&limit=200&country=us&${bust()}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(IOS_TIMEOUT), ...NO_STORE });
   if (!res.ok) return [];
   const { results = [] } = await res.json();
   return results.filter((r: IosApp) => r.wrapperType === "software");
@@ -164,5 +176,8 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.sortDate - a.sortDate)
     .map(({ sortDate: _s, ...rest }) => rest);
 
-  return NextResponse.json({ devName, apps });
+  return NextResponse.json(
+    { devName, apps },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", "CDN-Cache-Control": "no-store" } },
+  );
 }
