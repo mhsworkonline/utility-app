@@ -103,6 +103,38 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 .unsupported .u-ico{font-size:40px;margin-bottom:12px}
 .unsupported h2{font-size:18px;margin-bottom:8px}
 .unsupported p{font-size:14px;color:var(--text-muted);line-height:1.6;max-width:420px;margin:0 auto}
+
+/* Shortcuts */
+.shortcuts-wrap{position:relative;display:inline-block;margin-top:10px}
+.shortcuts-btn{font-family:var(--font);font-size:12px;font-weight:600;color:var(--text-muted);background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:6px 12px;cursor:pointer}
+.shortcuts-btn:hover{color:var(--text-dark)}
+.shortcuts-panel{display:none;position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;box-shadow:var(--shadow-lg);font-size:12.5px;color:var(--text-mid);white-space:nowrap;z-index:40}
+.shortcuts-panel.show{display:block}
+.shortcuts-panel div{padding:3px 0}
+.shortcuts-panel b{color:var(--text-dark);background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;padding:2px 6px;margin-right:8px;font-family:monospace}
+
+/* Default source row */
+.src-reset{padding:8px 14px;font-size:12px;flex-shrink:0}
+
+/* Floating recording badge */
+.float-rec{position:fixed;top:16px;right:16px;z-index:60;display:none;align-items:center;gap:8px;background:rgba(24,24,26,.92);color:#fff;padding:9px 16px;border-radius:30px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;box-shadow:var(--shadow-lg);cursor:pointer}
+.float-rec.show{display:flex}
+.float-dot{width:10px;height:10px;border-radius:50%;background:var(--rec);animation:pulse 1.2s ease-in-out infinite}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);background:var(--text-dark);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Default-source picker modal */
+.srcmodal{position:fixed;inset:0;background:rgba(24,24,26,.75);display:none;align-items:center;justify-content:center;z-index:70;padding:1rem}
+.srcmodal.show{display:flex}
+.srcmodal-card{background:var(--surface);border-radius:16px;padding:1.75rem;max-width:360px;width:100%;text-align:center;box-shadow:var(--shadow-lg)}
+.srcmodal-card h3{font-size:17px;margin-bottom:8px}
+.srcmodal-card p{font-size:13px;color:var(--text-muted);line-height:1.55;margin-bottom:18px}
+.srcmodal-opts{display:flex;flex-direction:column;gap:8px}
+.srcmodal-opts button{padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-alt);font-family:var(--font);font-size:14px;font-weight:600;color:var(--text-dark);cursor:pointer;text-align:left;transition:background .15s,border-color .15s}
+.srcmodal-opts button:hover{background:var(--brand-light);border-color:var(--brand)}
+.srcmodal-opts button.ghost{background:transparent;color:var(--text-muted);font-weight:500;font-size:12.5px;border:none;text-align:center;margin-top:4px}
 </style>
 </head>
 <body>
@@ -112,6 +144,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
     <div class="header-eyebrow">Capture · Preview · Download</div>
     <h1 class="header-title">Screen Recorder</h1>
     <p class="header-sub">Record your screen, a window, or a browser tab. Everything runs in your browser — nothing is uploaded.</p>
+    <div class="shortcuts-wrap">
+      <button class="shortcuts-btn" id="shortcutsBtn" type="button">⌨ Shortcuts</button>
+      <div class="shortcuts-panel" id="shortcutsPanel">
+        <div><b>R</b>Start / stop</div>
+        <div><b>P</b>Pause / resume</div>
+        <div><b>Esc</b>Cancel recording</div>
+      </div>
+    </div>
   </div>
 
   <!-- Unsupported -->
@@ -143,6 +183,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
           <label class="switch"><input type="checkbox" id="opt-sys"><span class="track"></span><span class="thumb"></span></label>
         </div>
       </div>
+      <div class="fmt-row" id="srcRow" style="display:none">
+        <div class="fmt-label">
+          <div class="opt-txt-title">Default source</div>
+          <div class="opt-txt-sub" id="srcSub">—</div>
+        </div>
+        <button type="button" class="btn src-reset" id="srcResetBtn">Reset</button>
+      </div>
       <div class="fmt-row">
         <div class="fmt-label">
           <div class="opt-txt-title">Format</div>
@@ -162,6 +209,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
           <button type="button" data-q="low">Low</button>
           <button type="button" data-q="balanced">Balanced</button>
           <button type="button" data-q="high">High</button>
+        </div>
+      </div>
+      <div class="fmt-row">
+        <div class="fmt-label">
+          <div class="opt-txt-title">Auto-stop</div>
+          <div class="opt-txt-sub">Stop automatically after this long</div>
+        </div>
+        <div class="seg" id="autoSeg">
+          <button type="button" data-min="0">Off</button>
+          <button type="button" data-min="5">5m</button>
+          <button type="button" data-min="15">15m</button>
+          <button type="button" data-min="30">30m</button>
+          <button type="button" data-min="60">60m</button>
         </div>
       </div>
       <button class="rec-btn" id="startBtn"><span class="dot"></span> Start recording</button>
@@ -196,6 +256,26 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 
 <div class="count" id="count"><div class="count-num" id="countNum">3</div></div>
 
+<div class="toast" id="toast"></div>
+
+<div class="float-rec" id="floatRec" title="Click to stop recording">
+  <span class="float-dot"></span>
+  <span id="floatTimer">00:00</span>
+</div>
+
+<div class="srcmodal" id="srcModal">
+  <div class="srcmodal-card">
+    <h3>What do you usually record?</h3>
+    <p>Pick a default and we'll skip asking next time. Reset it anytime from the recorder screen.</p>
+    <div class="srcmodal-opts">
+      <button type="button" data-src="monitor">🖥️ Entire Screen</button>
+      <button type="button" data-src="window">🪟 A Window</button>
+      <button type="button" data-src="browser">🌐 A Browser Tab</button>
+      <button type="button" class="ghost" data-src="ask">Always ask me</button>
+    </div>
+  </div>
+</div>
+
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -209,6 +289,64 @@ if (!supported) {
 let mediaRecorder = null, chunks = [], displayStream = null, micStream = null, audioCtx = null;
 let startTime = 0, pausedMs = 0, pauseStart = 0, timerId = null, blobUrl = null;
 let mimeType = '', container = 'webm', selectedFmt = 'webm', selectedQual = 'balanced';
+let autoStopMin = 0, autoStopTimer = null;
+
+const ORIGINAL_TITLE = document.title;
+const SRC_KEY = 'sr_defaultSource';
+const SRC_LABEL = { monitor: 'Entire Screen', window: 'A Window', browser: 'A Browser Tab', ask: 'Ask each time' };
+
+function getSourcePref(){ return localStorage.getItem(SRC_KEY); } // null = not set yet
+function setDefaultSource(v){ localStorage.setItem(SRC_KEY, v); renderSourceRow(); }
+function clearDefaultSource(){ localStorage.removeItem(SRC_KEY); renderSourceRow(); }
+
+function renderSourceRow(){
+  const pref = getSourcePref();
+  const row = $('srcRow');
+  if (pref === null){ row.style.display = 'none'; return; }
+  row.style.display = '';
+  $('srcSub').textContent = SRC_LABEL[pref] || pref;
+}
+
+function askDefaultSource(){
+  return new Promise(resolve => {
+    const modal = $('srcModal');
+    modal.classList.add('show');
+    const handler = e => {
+      const btn = e.target.closest('button[data-src]');
+      if (!btn) return;
+      modal.classList.remove('show');
+      modal.removeEventListener('click', handler);
+      setDefaultSource(btn.dataset.src);
+      toast('Default source saved — reset anytime from the recorder screen');
+      resolve(btn.dataset.src);
+    };
+    modal.addEventListener('click', handler);
+  });
+}
+
+// Short confirmation tones so start/stop are noticeable without needing an audio asset.
+function beep(freq, dur){
+  try {
+    const ctx = beep._ctx || (beep._ctx = new (window.AudioContext || window.webkitAudioContext)());
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = freq;
+    gain.gain.value = 0.05;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + dur / 1000);
+  } catch (e) {}
+}
+
+let toastTid = null;
+function toast(msg, ms){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTid);
+  toastTid = setTimeout(() => t.classList.remove('show'), ms || 2600);
+}
+
+function clearAutoStop(){ if (autoStopTimer){ clearTimeout(autoStopTimer); autoStopTimer = null; } }
+function isRecording(){ return !!mediaRecorder && mediaRecorder.state !== 'inactive'; }
 
 // Bitrate presets. MediaRecorder defaults to ~2.5 Mbps; screen content compresses
 // well, so "Balanced" roughly halves that and "Low" is smaller still.
@@ -279,7 +417,10 @@ function fmtSize(b){
 
 function updateTimer(){
   const elapsed = Date.now() - startTime - pausedMs;
-  $('timer').textContent = fmtTime(elapsed);
+  const t = fmtTime(elapsed);
+  $('timer').textContent = t;
+  $('floatTimer').textContent = t;
+  document.title = '🔴 ' + t + ' · Screen Recorder';
 }
 
 function countdown(n){
@@ -300,12 +441,21 @@ async function start(){
   clearError();
   const wantMic = $('opt-mic').checked;
   const wantSys = $('opt-sys').checked;
+  localStorage.setItem('sr_mic', wantMic ? '1' : '0');
+  localStorage.setItem('sr_sys', wantSys ? '1' : '0');
+
+  // Default source: ask once, then reuse the choice (as a picker hint) until reset.
+  // "ask" means the user opted to be prompted every time — re-prompt in that case too.
+  let srcPref = getSourcePref();
+  if (srcPref === null || srcPref === 'ask') srcPref = await askDefaultSource();
 
   // 1. Screen — request before countdown so the OS gesture is honoured.
   const q = QUALITY[selectedQual] || QUALITY.balanced;
+  const videoConstraints = { frameRate: { ideal: q.fps } };
+  if (srcPref && srcPref !== 'ask') videoConstraints.displaySurface = srcPref;
   try {
     displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: { ideal: q.fps } },
+      video: videoConstraints,
       audio: wantSys
     });
   } catch (err) {
@@ -375,12 +525,23 @@ async function start(){
   startTime = Date.now(); pausedMs = 0; pauseStart = 0;
   timerId = setInterval(updateTimer, 250); updateTimer();
 
+  if (autoStopMin > 0){
+    clearAutoStop();
+    autoStopTimer = setTimeout(() => {
+      toast(`Auto-stopped — reached the ${autoStopMin} min limit`);
+      stop();
+    }, autoStopMin * 60000);
+  }
+
   $('setup').style.display = 'none';
   $('result').classList.remove('show');
   $('live').classList.add('show');
+  $('floatRec').classList.add('show');
   $('liveStatus').classList.remove('paused');
   $('statusText').textContent = 'Recording';
   $('pauseBtn').textContent = 'Pause';
+  beep(880, 110);
+  toast('Recording started');
 }
 
 function togglePause(){
@@ -396,6 +557,22 @@ function togglePause(){
 
 function stop(){ if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
 
+function cancelRecording(){
+  if (!mediaRecorder) return;
+  mediaRecorder.ondataavailable = null;
+  mediaRecorder.onstop = null;
+  try { if (mediaRecorder.state !== 'inactive') mediaRecorder.stop(); } catch (e) {}
+  clearInterval(timerId); timerId = null;
+  clearAutoStop();
+  stopAllTracks();
+  chunks = [];
+  document.title = ORIGINAL_TITLE;
+  $('floatRec').classList.remove('show');
+  $('live').classList.remove('show');
+  $('setup').style.display = '';
+  toast('Recording cancelled — nothing saved');
+}
+
 function stopAllTracks(){
   if (displayStream) displayStream.getTracks().forEach(t => t.stop());
   if (micStream) micStream.getTracks().forEach(t => t.stop());
@@ -405,6 +582,7 @@ function stopAllTracks(){
 
 function finish(){
   clearInterval(timerId); timerId = null;
+  clearAutoStop();
   const elapsed = Date.now() - startTime - pausedMs;
   stopAllTracks();
 
@@ -418,8 +596,12 @@ function finish(){
   $('metaFmt').textContent = container.toUpperCase();
   $('downloadLabel').textContent = 'Download .' + container;
 
+  document.title = ORIGINAL_TITLE;
+  $('floatRec').classList.remove('show');
   $('live').classList.remove('show');
   $('result').classList.add('show');
+  beep(440, 160);
+  toast('Recording stopped — ready to download');
 }
 
 function download(){
@@ -434,17 +616,78 @@ function reset(){
   $('preview').removeAttribute('src'); $('preview').load();
   $('result').classList.remove('show');
   $('setup').style.display = '';
+  document.title = ORIGINAL_TITLE;
+  $('floatRec').classList.remove('show');
   clearError();
+}
+
+function initAuto(){
+  autoStopMin = parseInt(localStorage.getItem('sr_autostop') || '0', 10) || 0;
+  const seg = $('autoSeg');
+  seg.querySelectorAll('button').forEach(b => {
+    const m = parseInt(b.dataset.min, 10);
+    b.classList.toggle('active', m === autoStopMin);
+    b.addEventListener('click', () => {
+      autoStopMin = m;
+      localStorage.setItem('sr_autostop', String(m));
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    });
+  });
+}
+
+function initToggles(){
+  $('opt-mic').checked = localStorage.getItem('sr_mic') === '1';
+  $('opt-sys').checked = localStorage.getItem('sr_sys') === '1';
+}
+
+function initShortcutsPanel(){
+  const btn = $('shortcutsBtn'), panel = $('shortcutsPanel');
+  btn.addEventListener('click', e => { e.stopPropagation(); panel.classList.toggle('show'); });
+  document.addEventListener('click', e => {
+    if (panel.classList.contains('show') && !panel.contains(e.target) && e.target !== btn) panel.classList.remove('show');
+  });
+}
+
+function initKeyboardShortcuts(){
+  document.addEventListener('keydown', e => {
+    // Require a completely unmodified keypress so this never fights a browser/OS
+    // accelerator (Ctrl/Alt/Meta combos are reserved by the browser chrome).
+    if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+    const active = document.activeElement;
+    if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+    const key = e.key.toLowerCase();
+    if (key === 'r'){
+      e.preventDefault();
+      if (isRecording()) stop();
+      else if ($('setup').style.display !== 'none') start();
+    } else if (key === 'p' && isRecording()){
+      e.preventDefault();
+      togglePause();
+    } else if (key === 'escape' && isRecording()){
+      e.preventDefault();
+      cancelRecording();
+    }
+  });
 }
 
 if (supported){
   initFormat();
   initQuality();
+  initAuto();
+  initToggles();
+  initShortcutsPanel();
+  initKeyboardShortcuts();
+  renderSourceRow();
   $('startBtn').addEventListener('click', start);
   $('pauseBtn').addEventListener('click', togglePause);
   $('stopBtn').addEventListener('click', stop);
   $('downloadBtn').addEventListener('click', download);
   $('againBtn').addEventListener('click', reset);
+  $('floatRec').addEventListener('click', stop);
+  $('srcResetBtn').addEventListener('click', () => {
+    clearDefaultSource();
+    toast("Default source reset — you'll be asked again next time");
+  });
 }
 </script>
 </body>
