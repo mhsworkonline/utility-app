@@ -21,7 +21,7 @@ const PROVIDERS: { id: ProviderId; label: string; hint: string }[] = [
 type Tile = { name: string; ok: boolean; detail: string };
 type ErrRow = { id: number; app: string; message: string; created_at: string };
 
-const TABS = ["AI Settings", "Apps", "Health", "Errors"] as const;
+const TABS = ["AI Settings", "Video Downloader", "Apps", "Health", "Errors"] as const;
 type Tab = (typeof TABS)[number];
 
 /* Shared button styles so actions are colour-coded by intent. */
@@ -103,6 +103,7 @@ export default function AdminPage() {
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {tab === "AI Settings" && <AiTab flash={flash} />}
+        {tab === "Video Downloader" && <VideoDownloaderTab flash={flash} />}
         {tab === "Apps" && <AppsTab flash={flash} />}
         {tab === "Health" && <HealthTab />}
         {tab === "Errors" && <ErrorsTab flash={flash} />}
@@ -292,6 +293,96 @@ function AiTab({ flash }: { flash: (m: string) => void }) {
       >
         {busy ? "Saving…" : "Save settings"}
       </button>
+    </div>
+  );
+}
+
+/* ---------------- Video Downloader ---------------- */
+
+type VideoCookieStatus = { has_cookies: boolean; cookie_count: number };
+
+function VideoDownloaderTab({ flash }: { flash: (m: string) => void }) {
+  const [status, setStatus] = useState<VideoCookieStatus | null>(null);
+  const [cookies, setCookies] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const reload = useCallback(() => {
+    fetch("/api/admin/video-settings").then((r) => r.json()).then(setStatus).catch((e) => setErr(String(e)));
+  }, []);
+  useEffect(reload, [reload]);
+
+  async function save() {
+    setBusy(true);
+    setErr("");
+    const res = await fetch("/api/admin/video-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cookies }),
+    });
+    const d = await res.json();
+    setBusy(false);
+    if (!res.ok) return setErr(d.error ?? "Save failed.");
+    setCookies("");
+    flash("Cookies saved. Takes effect on the next download (within 60 seconds).");
+    reload();
+  }
+
+  async function clear() {
+    if (!confirm("Remove the saved cookies?")) return;
+    setBusy(true);
+    setErr("");
+    const res = await fetch("/api/admin/video-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cookies: "" }),
+    });
+    setBusy(false);
+    if (!res.ok) return setErr("Clear failed.");
+    flash("Cookies cleared.");
+    reload();
+  }
+
+  return (
+    <div className="space-y-6">
+      {err && <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-base text-red-700">{err}</p>}
+
+      <Card
+        title="Login cookies"
+        desc="Some YouTube requests and most Facebook/Instagram videos need a logged-in session. Export cookies.txt from a browser extension (e.g. 'Get cookies.txt') while signed in, then paste the full contents below. Stored in Supabase — works both locally and on the deployed site, no bin/cookies.txt or redeploy needed."
+      >
+        <div className="mb-3 text-sm">
+          {status === null ? (
+            "Loading…"
+          ) : status.has_cookies ? (
+            <span className="text-green-700">● {status.cookie_count} cookie{status.cookie_count === 1 ? "" : "s"} saved</span>
+          ) : (
+            <span className="text-ink-muted">○ No cookies saved</span>
+          )}
+        </div>
+
+        <Field label="cookies.txt contents">
+          <textarea
+            value={cookies}
+            onChange={(e) => setCookies(e.target.value)}
+            placeholder={status?.has_cookies ? "Paste new content to replace the saved cookies…" : "# Netscape HTTP Cookie File\n…"}
+            rows={8}
+            spellCheck={false}
+            className="w-full rounded-lg border border-surface-border bg-white px-3 py-2 font-mono text-xs outline-none focus:border-brand"
+          />
+        </Field>
+
+        <div className="mt-3 flex items-center gap-3">
+          <button onClick={save} disabled={busy || !cookies.trim()} className={BTN.primary}>
+            {busy ? "Saving…" : "Save cookies"}
+          </button>
+          {status?.has_cookies && (
+            <button onClick={clear} disabled={busy} className={BTN.dangerGhost}>
+              Clear saved cookies
+            </button>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

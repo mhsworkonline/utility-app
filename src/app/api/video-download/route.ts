@@ -5,6 +5,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { randomUUID } from "crypto";
 import { YT_DLP_BIN, FFMPEG_BIN } from "@/lib/ytdlp";
+import { getVideoSettings } from "@/lib/video-settings";
 
 const FORMAT_MAP: Record<string, string> = {
   "360":  "bestvideo[height<=360]+bestaudio/best[height<=360]",
@@ -13,17 +14,23 @@ const FORMAT_MAP: Record<string, string> = {
   "1080": "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
 };
 
-const COOKIE_HOSTS = ["facebook.com", "fb.watch", "instagram.com"];
+// Facebook/Instagram require a logged-in session for most videos. YouTube
+// normally doesn't, but increasingly challenges datacenter IPs (e.g. Netlify's)
+// with a "sign in to confirm you're not a bot" wall — cookies fix that too.
+const LOGIN_WALL_HOSTS = ["facebook.com", "fb.watch", "instagram.com"];
+const YOUTUBE_HOSTS = ["youtube.com", "youtu.be"];
+
 // Path for a manually exported cookies.txt file (one-time setup, most reliable)
 const COOKIES_FILE = join(process.cwd(), "bin", "cookies.txt");
-// bin/ is gitignored (never commit login cookies), so on Netlify the same
-// file contents are supplied via an env var and written to /tmp at request time.
-const COOKIES_ENV_FILE = join(tmpdir(), "yt-dlp-cookies.txt");
+// bin/ is gitignored (never commit login cookies) and Netlify's filesystem is
+// read-only, so on a deployed site cookies come from the DB or an env var and
+// get written to /tmp at request time instead.
+const COOKIES_TMP_FILE = join(tmpdir(), "yt-dlp-cookies.txt");
 
-function needsCookies(url: string): boolean {
+function hostMatches(url: string, hosts: string[]): boolean {
   try {
-    const host = new URL(url).hostname.replace("www.", "");
-    return COOKIE_HOSTS.some(h => host.endsWith(h));
+    const host = new URL(url).hostname.replace("www.", "").replace("m.", "");
+    return hosts.some(h => host.endsWith(h));
   } catch { return false; }
 }
 
@@ -35,23 +42,36 @@ function cookiesFromEnv(): string | null {
   return process.env.YTDLP_COOKIES ?? null;
 }
 
-// Returns cookie args in preference order:
-// 1. bin/cookies.txt          — manually exported, local dev
-// 2. YTDLP_COOKIES(_B64) env  — same file's contents, for Netlify's read-only bin/
-// 3. firefox                  — doesn't lock its DB on Windows, local dev fallback
-function cookieArgs(url: string): string[] {
-  if (!needsCookies(url)) return [];
-  if (existsSync(COOKIES_FILE)) return ["--cookies", COOKIES_FILE];
+// Resolves a cookies.txt in preference order:
+// 1. bin/cookies.txt        — manually exported, local dev
+// 2. admin panel (DB)       — set via Admin → Video Downloader, works everywhere
+// 3. YTDLP_COOKIES(_B64) env — manual/CI override
+async function resolvedCookieFile(): Promise<string | null> {
+  if (existsSync(COOKIES_FILE)) return COOKIES_FILE;
 
-  const envCookies = cookiesFromEnv();
-  if (envCookies) {
-    try {
-      writeFileSync(COOKIES_ENV_FILE, envCookies, "utf-8");
-      return ["--cookies", COOKIES_ENV_FILE];
-    } catch { /* fall through */ }
-  }
+  let cookieText: string | null = null;
+  try { cookieText = (await getVideoSettings()).cookies || null; } catch { /* DB unreachable */ }
+  if (!cookieText) cookieText = cookiesFromEnv();
+  if (!cookieText) return null;
 
-  return ["--cookies-from-browser", "firefox"];
+  try {
+    writeFileSync(COOKIES_TMP_FILE, cookieText, "utf-8");
+    return COOKIES_TMP_FILE;
+  } catch { return null; }
+}
+
+async function cookieArgs(url: string): Promise<string[]> {
+  const isLoginWall = hostMatches(url, LOGIN_WALL_HOSTS);
+  const isYoutube = hostMatches(url, YOUTUBE_HOSTS);
+  if (!isLoginWall && !isYoutube) return [];
+
+  const file = await resolvedCookieFile();
+  if (file) return ["--cookies", file];
+
+  // Browser-DB extraction is a reasonable last resort for FB/IG (which almost
+  // always need a session). For YouTube, which usually works cookie-free,
+  // forcing this would break plain downloads on machines without Firefox.
+  return isLoginWall ? ["--cookies-from-browser", "firefox"] : [];
 }
 
 function parseYtDlpError(stderr: string): string {
@@ -121,7 +141,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (FFMPEG_BIN) args.push("--ffmpeg-location", FFMPEG_BIN);
-  args.push(...cookieArgs(url!));
+  args.push(...(await cookieArgs(url!)));
   args.push("--max-filesize", "100m", "--no-playlist", "-o", outTemplate, url!);
 
   try {
@@ -144,9 +164,8 @@ export async function POST(req: NextRequest) {
     if (lower.includes("login") || lower.includes("sign in") || lower.includes("log in")
         || lower.includes("cookie database") || lower.includes("could not copy")) {
       return NextResponse.json({
-        error: process.env.NETLIFY
-          ? "Login required. Set the YTDLP_COOKIES (or YTDLP_COOKIES_B64) environment variable to valid cookies for this platform."
-          : "Login required. Make sure bin/cookies.txt contains valid cookies for this platform.",
+        error: "Login required for this platform. Add cookies via Admin → Video Downloader"
+          + (process.env.NETLIFY ? "." : ", or place them in bin/cookies.txt for local dev."),
       }, { status: 401 });
     }
     if (lower.includes("private") || lower.includes("not available") || lower.includes("removed"))
