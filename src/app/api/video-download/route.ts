@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
-import { existsSync, readdirSync } from "fs";
+import { existsSync, readdirSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { randomUUID } from "crypto";
@@ -16,6 +16,9 @@ const FORMAT_MAP: Record<string, string> = {
 const COOKIE_HOSTS = ["facebook.com", "fb.watch", "instagram.com"];
 // Path for a manually exported cookies.txt file (one-time setup, most reliable)
 const COOKIES_FILE = join(process.cwd(), "bin", "cookies.txt");
+// bin/ is gitignored (never commit login cookies), so on Netlify the same
+// file contents are supplied via an env var and written to /tmp at request time.
+const COOKIES_ENV_FILE = join(tmpdir(), "yt-dlp-cookies.txt");
 
 function needsCookies(url: string): boolean {
   try {
@@ -24,13 +27,30 @@ function needsCookies(url: string): boolean {
   } catch { return false; }
 }
 
+function cookiesFromEnv(): string | null {
+  if (process.env.YTDLP_COOKIES_B64) {
+    try { return Buffer.from(process.env.YTDLP_COOKIES_B64, "base64").toString("utf-8"); }
+    catch { return null; }
+  }
+  return process.env.YTDLP_COOKIES ?? null;
+}
+
 // Returns cookie args in preference order:
-// 1. bin/cookies.txt — manually exported, no locking issues
-// 2. firefox        — doesn't lock its DB on Windows
-// 3. edge / chrome  — locked while browser is open; last resort
+// 1. bin/cookies.txt          — manually exported, local dev
+// 2. YTDLP_COOKIES(_B64) env  — same file's contents, for Netlify's read-only bin/
+// 3. firefox                  — doesn't lock its DB on Windows, local dev fallback
 function cookieArgs(url: string): string[] {
   if (!needsCookies(url)) return [];
   if (existsSync(COOKIES_FILE)) return ["--cookies", COOKIES_FILE];
+
+  const envCookies = cookiesFromEnv();
+  if (envCookies) {
+    try {
+      writeFileSync(COOKIES_ENV_FILE, envCookies, "utf-8");
+      return ["--cookies", COOKIES_ENV_FILE];
+    } catch { /* fall through */ }
+  }
+
   return ["--cookies-from-browser", "firefox"];
 }
 
@@ -124,7 +144,9 @@ export async function POST(req: NextRequest) {
     if (lower.includes("login") || lower.includes("sign in") || lower.includes("log in")
         || lower.includes("cookie database") || lower.includes("could not copy")) {
       return NextResponse.json({
-        error: "Login required. Make sure bin/cookies.txt contains valid cookies for this platform.",
+        error: process.env.NETLIFY
+          ? "Login required. Set the YTDLP_COOKIES (or YTDLP_COOKIES_B64) environment variable to valid cookies for this platform."
+          : "Login required. Make sure bin/cookies.txt contains valid cookies for this platform.",
       }, { status: 401 });
     }
     if (lower.includes("private") || lower.includes("not available") || lower.includes("removed"))
