@@ -57,6 +57,15 @@ export async function GET() {
 
 // POST — downloads the latest yt-dlp.exe and replaces the current binary
 export async function POST() {
+  // Netlify Functions ship a read-only filesystem outside of /tmp — the
+  // bundled binary can't be overwritten in place there. Redeploy to update it.
+  if (process.env.NETLIFY) {
+    return NextResponse.json(
+      { error: "yt-dlp updates aren't available in this deployment. Redeploy to pick up the latest release." },
+      { status: 501 }
+    );
+  }
+
   const oldVersion = await getVersion(YT_DLP_BIN);
 
   // Write to the same path as the running binary; fall back to bin/yt-dlp.exe

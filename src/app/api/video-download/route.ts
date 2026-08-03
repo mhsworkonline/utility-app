@@ -4,7 +4,7 @@ import { existsSync, readdirSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { randomUUID } from "crypto";
-import { YT_DLP_BIN } from "@/lib/ytdlp";
+import { YT_DLP_BIN, FFMPEG_BIN } from "@/lib/ytdlp";
 
 const FORMAT_MAP: Record<string, string> = {
   "360":  "bestvideo[height<=360]+bestaudio/best[height<=360]",
@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
     args.push("-f", FORMAT_MAP[format] ?? FORMAT_MAP["720"], "--merge-output-format", "mp4");
   }
 
+  if (FFMPEG_BIN) args.push("--ffmpeg-location", FFMPEG_BIN);
   args.push(...cookieArgs(url!));
   args.push("--max-filesize", "100m", "--no-playlist", "-o", outTemplate, url!);
 
