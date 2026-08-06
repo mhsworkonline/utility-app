@@ -101,6 +101,41 @@ function isNotFound(err: unknown): boolean {
   return msg.includes("ENOENT") || msg.includes("not found") || msg.includes("is not recognized");
 }
 
+// A stale/rotated cookie session can make yt-dlp behave *worse* than having no
+// cookies at all (YouTube serves a half-authenticated, inconsistent response).
+// Detect that specific warning so callers can retry once cookie-free.
+function hasStaleCookies(err: unknown): boolean {
+  const stderr = (err as { stderr?: string }).stderr ?? "";
+  return /no longer valid|likely been rotated/i.test(stderr);
+}
+
+function downloadErrorResponse(err: unknown): NextResponse {
+  if (isNotFound(err))
+    return NextResponse.json({ error: "yt-dlp not found. Run: node setup-deps.js" }, { status: 500 });
+
+  const rawMsg = (err as Error).message ?? "";
+  const lower = rawMsg.toLowerCase();
+
+  if (lower.includes("ffmpeg") || lower.includes("postprocessor"))
+    return NextResponse.json({ error: "ffmpeg is required for this format." }, { status: 500 });
+  if (lower.includes("too large") || lower.includes("filesize"))
+    return NextResponse.json({ error: "Video exceeds the 100 MB size limit." }, { status: 400 });
+
+  // Auth/cookie checks must come before generic "not available" — Instagram uses
+  // the same phrasing for both login walls and genuinely missing content.
+  if (lower.includes("login") || lower.includes("sign in") || lower.includes("log in")
+      || lower.includes("cookie database") || lower.includes("could not copy")) {
+    return NextResponse.json({
+      error: "Login required for this platform. Add cookies via Admin → Video Downloader"
+        + (process.env.NETLIFY ? "." : ", or place them in bin/cookies.txt for local dev."),
+    }, { status: 401 });
+  }
+  if (lower.includes("private") || lower.includes("not available") || lower.includes("removed"))
+    return NextResponse.json({ error: "This video is private or has been removed." }, { status: 400 });
+
+  return NextResponse.json({ error: rawMsg }, { status: 500 });
+}
+
 // When yt-dlp has no title metadata (e.g. Facebook reels), fall back to the
 // video ID or last meaningful path segment from the URL.
 function titleFromUrl(url: string): string {
@@ -133,45 +168,28 @@ export async function POST(req: NextRequest) {
   const prefix = `yt_${key}_`;
   const outTemplate = join(tmp, `${prefix}%(title)s.%(ext)s`);
 
-  const args: string[] = [];
-  if (isMp3) {
-    args.push("-f", "bestaudio/best", "--extract-audio", "--audio-format", "mp3");
-  } else {
-    args.push("-f", FORMAT_MAP[format] ?? FORMAT_MAP["720"], "--merge-output-format", "mp4");
-  }
+  const formatArgs: string[] = isMp3
+    ? ["-f", "bestaudio/best", "--extract-audio", "--audio-format", "mp3"]
+    : ["-f", FORMAT_MAP[format] ?? FORMAT_MAP["720"], "--merge-output-format", "mp4"];
+  if (FFMPEG_BIN) formatArgs.push("--ffmpeg-location", FFMPEG_BIN);
 
-  if (FFMPEG_BIN) args.push("--ffmpeg-location", FFMPEG_BIN);
-  args.push(...(await cookieArgs(url!)));
-  args.push("--max-filesize", "100m", "--no-playlist", "-o", outTemplate, url!);
+  const trailingArgs = ["--max-filesize", "100m", "--no-playlist", "-o", outTemplate, url!];
+  const buildArgs = (withCookies: string[]) => [...formatArgs, ...withCookies, ...trailingArgs];
+
+  const cookies = await cookieArgs(url!);
 
   try {
-    await runYtDlp(args);
+    try {
+      await runYtDlp(buildArgs(cookies));
+    } catch (err) {
+      // Stale cookies can make a download fail when it would've worked with
+      // none at all — retry once cookie-free before surfacing an error.
+      if (cookies.length && hasStaleCookies(err)) await runYtDlp(buildArgs([]));
+      else throw err;
+    }
     await new Promise(r => setTimeout(r, 300));
   } catch (err) {
-    if (isNotFound(err))
-      return NextResponse.json({ error: "yt-dlp not found. Run: node setup-deps.js" }, { status: 500 });
-
-    const rawMsg = (err as Error).message ?? "";
-    const lower = rawMsg.toLowerCase();
-
-    if (lower.includes("ffmpeg") || lower.includes("postprocessor"))
-      return NextResponse.json({ error: "ffmpeg is required for this format." }, { status: 500 });
-    if (lower.includes("too large") || lower.includes("filesize"))
-      return NextResponse.json({ error: "Video exceeds the 100 MB size limit." }, { status: 400 });
-
-    // Auth/cookie checks must come before generic "not available" — Instagram uses
-    // the same phrasing for both login walls and genuinely missing content.
-    if (lower.includes("login") || lower.includes("sign in") || lower.includes("log in")
-        || lower.includes("cookie database") || lower.includes("could not copy")) {
-      return NextResponse.json({
-        error: "Login required for this platform. Add cookies via Admin → Video Downloader"
-          + (process.env.NETLIFY ? "." : ", or place them in bin/cookies.txt for local dev."),
-      }, { status: 401 });
-    }
-    if (lower.includes("private") || lower.includes("not available") || lower.includes("removed"))
-      return NextResponse.json({ error: "This video is private or has been removed." }, { status: 400 });
-
-    return NextResponse.json({ error: rawMsg }, { status: 500 });
+    return downloadErrorResponse(err);
   }
 
   let match: string | undefined;
