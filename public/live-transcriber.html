@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Live Transcriber</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F4F0;--surface:#FFFFFF;--surface-alt:#F8F7F4;--border:#E2E1DC;
+  --text-dark:#18181A;--text-mid:#4A4A50;--text-muted:#8A8A92;
+  --brand:#7C3AED;--brand-light:#F5F3FF;--rec:#DC2626;--rec-bg:#FEF2F2;
+  --ok:#16A34A;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow:0 1px 4px rgba(0,0,0,.06);--shadow-lg:0 4px 20px rgba(0,0,0,.08);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem}
+.page{max-width:760px;margin:0 auto}
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-muted);text-decoration:none;letter-spacing:.03em;margin-bottom:14px}
+.back-link:hover{color:var(--brand)}
+.header{margin-bottom:1.75rem}
+.header-eyebrow{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+.header-title{font-size:24px;font-weight:600;letter-spacing:-.01em;margin-bottom:4px}
+.header-sub{font-size:14px;color:var(--text-muted);line-height:1.5}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:1.5rem;margin-bottom:1.25rem}
+
+/* Mode tabs */
+.tabs{display:flex;flex-wrap:wrap;background:var(--surface-alt);border:1px solid var(--border);border-radius:11px;padding:3px;gap:2px;margin-bottom:1.25rem}
+.tabs button{flex:1;min-width:120px;border:none;background:transparent;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-mid);padding:9px 12px;border-radius:8px;cursor:pointer;transition:background .15s,color .15s}
+.tabs button.active{background:var(--surface);color:var(--text-dark);box-shadow:var(--shadow)}
+.tabs button:disabled{opacity:.4;cursor:not-allowed}
+.cost-badge{display:inline-block;margin-left:4px;padding:1px 6px;border-radius:20px;font-size:10px;font-weight:700;background:#DBEAFE;color:#1D4ED8;vertical-align:1px}
+.cost-badge.free{background:#DCFCE7;color:#166534}
+
+.field{margin-bottom:1.25rem}
+.field:last-child{margin-bottom:0}
+.field-label{font-size:14px;font-weight:600;margin-bottom:2px}
+.field-sub{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:10px}
+select,input[type=file]{width:100%;font-family:var(--font);font-size:14px;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-alt);color:var(--text-dark)}
+
+.drop{border:1.5px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.drag{border-color:var(--brand);background:var(--brand-light)}
+.drop input{display:none}
+.drop-ico{font-size:26px;margin-bottom:6px}
+.drop-txt{font-size:13px;font-weight:600}
+.drop-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+video#videoEl{width:100%;border-radius:12px;background:#000;display:block;margin-bottom:10px;max-height:360px}
+.video-actions{display:flex;gap:8px;margin-bottom:1.25rem}
+.video-actions .btn{flex:1}
+
+.rec-btn{width:100%;padding:15px;background:var(--brand);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:filter .18s,opacity .18s}
+.rec-btn:hover{filter:brightness(.94)}
+.rec-btn:disabled{opacity:.45;cursor:not-allowed}
+.rec-btn .dot{width:10px;height:10px;border-radius:50%;background:#fff}
+
+.hint{font-size:12px;color:var(--text-muted);line-height:1.6;margin-top:14px;text-align:center}
+
+/* Live listening state */
+.live{display:none;flex-direction:column;gap:14px}
+.live.show{display:flex}
+.live-status{display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:600}
+.live-status .pulse{width:11px;height:11px;border-radius:50%;background:var(--rec);animation:pulse 1.2s ease-in-out infinite}
+.live-status.paused .pulse{background:var(--text-muted);animation:none}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+.caption{min-height:64px;background:var(--surface-alt);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:17px;line-height:1.5;color:var(--text-dark);display:flex;align-items:center}
+.caption .interim{color:var(--text-muted)}
+.caption .placeholder{color:var(--text-muted);font-style:italic}
+
+.transcript{max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface-alt)}
+.seg-item{display:flex;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13.5px;line-height:1.55}
+.seg-item:last-child{border-bottom:none}
+.seg-time{flex-shrink:0;color:var(--text-muted);font-variant-numeric:tabular-nums;font-size:12px;padding-top:1px}
+.seg-text{color:var(--text-dark)}
+.seg-text mark{background:#FDE68A;border-radius:2px;padding:0 1px}
+.transcript-empty{padding:24px;text-align:center;color:var(--text-muted);font-size:13px}
+
+.live-controls{display:flex;gap:10px}
+.ctrl{flex:1;padding:13px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;background:var(--surface);color:var(--text-dark);transition:background .15s}
+.ctrl:hover{background:var(--surface-alt)}
+.ctrl.stop{background:var(--text-dark);color:#fff;border-color:var(--text-dark)}
+.ctrl.stop:hover{filter:brightness(1.15)}
+
+.search-row{display:flex;gap:8px;margin-bottom:10px}
+.search-row input{flex:1;font-family:var(--font);font-size:13px;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+
+/* Result */
+.result{display:none}
+.result.show{display:block}
+textarea#editArea{width:100%;min-height:220px;font-family:var(--font);font-size:13.5px;line-height:1.6;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface-alt);color:var(--text-dark);resize:vertical;margin-bottom:14px}
+.result-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-muted);margin-bottom:16px}
+.result-meta b{color:var(--text-dark);font-weight:600}
+.result-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.btn{padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-dark);transition:background .15s}
+.btn:hover{background:var(--surface-alt)}
+.btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn.primary:hover{filter:brightness(.95);background:var(--brand)}
+.btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;margin-right:5px}
+
+/* Notice */
+.notice{display:none;padding:14px 18px;border-radius:10px;font-size:13px;line-height:1.55;margin-bottom:1.25rem}
+.notice.show{display:block}
+.notice.err{background:var(--rec-bg);border:1px solid #FECACA;color:#991B1B}
+.notice.warn{background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #F59E0B;color:#92400E}
+
+.unsupported{display:none;text-align:center;padding:2.5rem 1.5rem}
+.unsupported.show{display:block}
+.unsupported .u-ico{font-size:40px;margin-bottom:12px}
+.unsupported h2{font-size:18px;margin-bottom:8px}
+.unsupported p{font-size:14px;color:var(--text-muted);line-height:1.6;max-width:420px;margin:0 auto}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);background:var(--text-dark);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back-link" href="/">← All apps</a>
+  <div class="header">
+    <div class="header-eyebrow">Listen · Caption · Save</div>
+    <h1 class="header-title">Live Transcriber</h1>
+    <p class="header-sub">Transcribe audio from a video playing in another tab, a video you upload here, or your microphone — then save the transcript.</p>
+  </div>
+
+  <!-- Unsupported -->
+  <div class="card unsupported" id="unsupported">
+    <div class="u-ico">🎙️</div>
+    <h2>Desktop browser required</h2>
+    <p>Live Transcriber needs microphone/screen-capture APIs that aren't available in this browser. Open this page in the latest Chrome or Edge on desktop.</p>
+  </div>
+
+  <div id="app">
+    <div class="notice err" id="error"></div>
+    <div class="notice warn show" id="modeNotice"></div>
+
+    <div class="tabs" id="modeTabs">
+      <button type="button" data-mode="tab">🖥 Browser tab / window <span class="cost-badge">Local</span></button>
+      <button type="button" data-mode="video">📼 Uploaded video <span class="cost-badge">Local</span></button>
+      <button type="button" data-mode="mic">🎙 Microphone <span class="cost-badge free">Free</span></button>
+    </div>
+
+    <!-- Setup -->
+    <div class="card" id="setup">
+      <div class="field" id="videoField" style="display:none">
+        <div class="field-label">Video file</div>
+        <div class="field-sub">Its audio track is captured directly — no need for speakers or a quiet room.</div>
+        <label class="drop" id="dropZone">
+          <input type="file" id="fileInput" accept="video/*"/>
+          <div class="drop-ico">📁</div>
+          <div class="drop-txt" id="dropTxt">Click to choose a video, or drag one here</div>
+          <div class="drop-sub">Stays on your device — only short audio chunks are sent for transcription</div>
+        </label>
+        <div id="videoWrap" style="display:none">
+          <div class="field-sub" id="videoFileName"></div>
+          <video id="videoEl" controls playsinline></video>
+          <div class="video-actions">
+            <button type="button" class="btn" id="changeVideoBtn">Choose a different video</button>
+            <button type="button" class="btn" id="removeVideoBtn">✕ Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Language</div>
+        <div class="field-sub">What language is being spoken</div>
+        <select id="langSelect">
+          <option value="">Auto-detect</option>
+          <option value="en-US">English</option>
+          <option value="es-ES">Spanish</option>
+          <option value="fr-FR">French</option>
+          <option value="de-DE">German</option>
+          <option value="pt-BR">Portuguese</option>
+          <option value="hi-IN">Hindi</option>
+          <option value="zh-CN">Chinese (Mandarin)</option>
+          <option value="ja-JP">Japanese</option>
+          <option value="ko-KR">Korean</option>
+          <option value="ar-SA">Arabic</option>
+          <option value="ru-RU">Russian</option>
+          <option value="it-IT">Italian</option>
+        </select>
+      </div>
+
+      <button class="rec-btn" id="startBtn" style="margin-top:1.25rem"><span class="dot"></span> <span id="startLabel">Start</span></button>
+      <p class="hint" id="startHint"></p>
+    </div>
+
+    <!-- Listening -->
+    <div class="card live" id="live">
+      <div class="live-status" id="liveStatus"><span class="pulse"></span> <span id="statusText">Listening</span></div>
+      <div class="caption" id="caption"><span class="placeholder">Waiting for speech…</span></div>
+
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Search transcript…"/>
+      </div>
+      <div class="transcript" id="transcript">
+        <div class="transcript-empty" id="transcriptEmpty">Recognized lines will appear here.</div>
+      </div>
+
+      <div class="live-controls">
+        <button class="ctrl" id="pauseBtn">Pause</button>
+        <button class="ctrl stop" id="stopBtn">Stop</button>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="card result" id="result">
+      <div class="result-meta">
+        <span>Duration <b id="metaDur">—</b></span>
+        <span>Lines <b id="metaLines">—</b></span>
+        <span>Source <b id="metaSource">—</b></span>
+      </div>
+      <div class="field-label" style="margin-bottom:6px">Transcript (editable)</div>
+      <div class="field-sub">Edits here apply to the .txt download. .srt/.vtt keep the original recognized timing.</div>
+      <textarea id="editArea"></textarea>
+      <div class="result-actions">
+        <button class="btn primary" id="copyBtn"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>Copy text</button>
+        <button class="btn" id="dlTxt">Download .txt</button>
+        <button class="btn" id="dlSrt">Download .srt</button>
+        <button class="btn" id="dlVtt">Download .vtt</button>
+      </div>
+      <button class="btn" id="againBtn" style="width:100%">Start a new session</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const hasDisplayMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+const hasRecorder = !!window.MediaRecorder;
+const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+const baseSupported = hasMediaDevices && hasRecorder;
+
+if (!baseSupported) {
+  $('unsupported').classList.add('show');
+  $('app').style.display = 'none';
+}
+
+const CHUNK_MS = 6000; // Whisper chunk length: short enough for near-live captions, long enough for context
+
+const MODE_INFO = {
+  tab: {
+    label: 'Browser tab / window',
+    notice: '🖥️ <b>Needs the local transcription service running</b> (see <code>python-services/whisper-transcriber</code>) — free, but the request will fail if it\'s not started. You\'ll be asked which tab, window, or screen to share. <b>Tick "Share tab audio" / "Share audio"</b> in that picker — this is how the video\'s sound (e.g. a YouTube tab) reaches the transcriber. Chrome/Edge support per-tab audio; other browsers may only offer full-screen/system audio.',
+    startLabel: 'Start capturing tab audio',
+    hint: 'Free — transcribed locally. Start the service first: python server.py in python-services/whisper-transcriber.',
+  },
+  video: {
+    label: 'Uploaded video',
+    notice: '🖥️ <b>Needs the local transcription service running</b> (see <code>python-services/whisper-transcriber</code>) — free, but the request will fail if it\'s not started. Load a video below, then press Start — its audio track is captured directly from the file, so accuracy doesn\'t depend on your speaker volume.',
+    startLabel: 'Start transcribing video',
+    hint: 'Free — transcribed locally. Start the service first: python server.py in python-services/whisper-transcriber.',
+  },
+  mic: {
+    label: 'Microphone',
+    notice: '✅ Free — captions come from your <b>microphone</b> and run fully in your browser, but it has to physically hear the audio, so turn your speaker volume up.',
+    startLabel: 'Start listening',
+    hint: 'Runs entirely in your browser via the Web Speech API. Chrome/Edge only. No cost, no setup.',
+  },
+};
+
+let mode = 'tab';
+let listening = false, paused = false;
+let startTime = 0, pausedMs = 0, pauseStart = 0;
+let segments = [];          // { startMs, endMs, text }
+let interimStart = {};      // mic mode: resultIndex -> firstSeenMs
+let currentInterim = '';
+let pendingCount = 0;
+let pendingPromises = new Set();
+let recognition = null;             // mic mode
+let captureStreamRef = null;        // tab/video mode: audio-only MediaStream being chunked
+let currentChunkRecorder = null;    // tab/video mode: in-flight MediaRecorder for the active chunk
+let resumeGate = null;              // tab/video mode: resolved when resuming from pause
+
+let toastTid = null;
+function toast(msg, ms){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTid);
+  toastTid = setTimeout(() => t.classList.remove('show'), ms || 2600);
+}
+function showError(msg){ const e=$('error'); e.textContent=msg; e.classList.add('show'); }
+function clearError(){ $('error').classList.remove('show'); }
+
+function elapsedMs(){ return Date.now() - startTime - pausedMs - (paused ? (Date.now() - pauseStart) : 0); }
+
+function fmtTime(ms){
+  const s = Math.max(0, Math.floor(ms/1000)), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  const mm = String(m).padStart(2,'0'), ss = String(sec).padStart(2,'0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+function fmtSrtTime(ms){
+  ms = Math.max(0, Math.round(ms));
+  const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000), s = Math.floor((ms%60000)/1000), msr = ms%1000;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(msr).padStart(3,'0')}`;
+}
+function fmtVttTime(ms){ return fmtSrtTime(ms).replace(',', '.'); }
+
+/* ---------------- Mode tabs ---------------- */
+function updateNotice(){
+  const info = MODE_INFO[mode];
+  $('modeNotice').innerHTML = info.notice;
+  $('startLabel').textContent = info.startLabel;
+  $('startHint').textContent = info.hint;
+}
+function setMode(m){
+  mode = m;
+  $('modeTabs').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  $('videoField').style.display = m === 'video' ? '' : 'none';
+  updateNotice();
+  clearError();
+}
+$('modeTabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-mode]');
+  if (!b || b.disabled || listening) return;
+  setMode(b.dataset.mode);
+});
+
+function initModeAvailability(){
+  const tabBtn = $('modeTabs').querySelector('[data-mode="tab"]');
+  const micBtn = $('modeTabs').querySelector('[data-mode="mic"]');
+  if (!hasDisplayMedia){ tabBtn.disabled = true; tabBtn.title = 'Tab/window capture is not supported in this browser'; }
+  if (!SR){ micBtn.disabled = true; micBtn.title = 'Web Speech API is not supported in this browser'; }
+  if (!hasDisplayMedia && mode === 'tab') mode = 'video';
+  setMode(mode);
+}
+
+/* ---------------- Video file loading ---------------- */
+let loadedVideoUrl = null;
+
+function loadFile(file){
+  if (!file) return;
+  if (loadedVideoUrl) URL.revokeObjectURL(loadedVideoUrl);
+  loadedVideoUrl = URL.createObjectURL(file);
+  $('videoEl').src = loadedVideoUrl;
+  $('videoFileName').textContent = file.name;
+  $('dropZone').style.display = 'none';
+  $('videoWrap').style.display = '';
+}
+function clearVideo(){
+  const v = $('videoEl');
+  v.pause();
+  v.removeAttribute('src'); v.load();
+  if (loadedVideoUrl){ URL.revokeObjectURL(loadedVideoUrl); loadedVideoUrl = null; }
+  $('fileInput').value = ''; // lets the same file be re-selected later and fire 'change' again
+  $('videoWrap').style.display = 'none';
+  $('dropZone').style.display = '';
+}
+$('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
+$('changeVideoBtn').addEventListener('click', () => $('fileInput').click());
+$('removeVideoBtn').addEventListener('click', clearVideo);
+const dz = $('dropZone');
+['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, e => { e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(evt => dz.addEventListener(evt, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) { $('fileInput').files = e.dataTransfer.files; loadFile(f); } });
+
+/* ---------------- Transcript rendering ---------------- */
+function escapeHtml(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function highlight(text, query){
+  const safe = escapeHtml(text);
+  if (!query) return safe;
+  try {
+    const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+    return safe.replace(re, '<mark>$1</mark>');
+  } catch (e) { return safe; }
+}
+function renderTranscript(){
+  const wrap = $('transcript');
+  const query = $('searchInput').value.trim();
+  if (!segments.length){
+    wrap.innerHTML = '<div class="transcript-empty" id="transcriptEmpty">Recognized lines will appear here.</div>';
+    return;
+  }
+  wrap.innerHTML = segments.map(s =>
+    `<div class="seg-item"><span class="seg-time">${fmtTime(s.startMs)}</span><span class="seg-text">${highlight(s.text, query)}</span></div>`
+  ).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+$('searchInput').addEventListener('input', renderTranscript);
+
+function renderCaption(){
+  const cap = $('caption');
+  if (currentInterim){
+    cap.innerHTML = '<span class="interim">' + escapeHtml(currentInterim) + '</span>';
+  } else if (mode !== 'mic' && pendingCount > 0 && !segments.length){
+    cap.innerHTML = '<span class="interim">Transcribing…</span>';
+  } else if (segments.length){
+    cap.innerHTML = escapeHtml(segments[segments.length - 1].text);
+  } else {
+    cap.innerHTML = '<span class="placeholder">Waiting for speech…</span>';
+  }
+}
+
+/* ---------------- Mic mode: Web Speech API ---------------- */
+function buildRecognition(){
+  const r = new SR();
+  r.continuous = true;
+  r.interimResults = true;
+  r.lang = $('langSelect').value || 'en-US';
+
+  r.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const res = e.results[i];
+      const text = res[0].transcript.trim();
+      if (!(i in interimStart)) interimStart[i] = elapsedMs();
+      if (res.isFinal){
+        if (text) segments.push({ startMs: interimStart[i], endMs: elapsedMs(), text });
+        delete interimStart[i];
+      } else {
+        interim += text + ' ';
+      }
+    }
+    currentInterim = interim.trim();
+    renderCaption();
+    renderTranscript();
+  };
+
+  r.onerror = e => {
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+      showError('Microphone access was denied. Allow microphone permission and try again.');
+      listening = false; stopUI(); return;
+    }
+    if (e.error === 'audio-capture'){
+      showError('No microphone was found. Connect a microphone and try again.');
+      listening = false; stopUI(); return;
+    }
+  };
+
+  r.onend = () => {
+    if (listening && !paused){
+      try { recognition = buildRecognition(); recognition.start(); }
+      catch (err) { /* ignore rapid-restart races */ }
+    }
+  };
+
+  return r;
+}
+
+/* ---------------- Tab/video mode: chunked Whisper transcription ---------------- */
+function pickAudioMime(){
+  const cands = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'];
+  return cands.find(t => window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported(t)) || '';
+}
+
+function recordChunk(stream, ms){
+  return new Promise((resolve, reject) => {
+    let rec;
+    const mimeType = pickAudioMime();
+    try { rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream); }
+    catch (err) { reject(err); return; }
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = () => resolve(new Blob(chunks, { type: rec.mimeType || 'audio/webm' }));
+    rec.onerror = e => reject(e.error || new Error('recorder error'));
+    currentChunkRecorder = rec;
+    try { rec.start(); } catch (err) { reject(err); return; }
+    setTimeout(() => { if (rec.state !== 'inactive') { try { rec.stop(); } catch (e) {} } }, ms);
+  });
+}
+
+const WHISPER_LANG = {
+  'en-US':'en','es-ES':'es','fr-FR':'fr','de-DE':'de','pt-BR':'pt','hi-IN':'hi',
+  'zh-CN':'zh','ja-JP':'ja','ko-KR':'ko','ar-SA':'ar','ru-RU':'ru','it-IT':'it',
+};
+
+function transcribeChunk(blob, startMs){
+  pendingCount++; renderCaption();
+  const p = (async () => {
+    try {
+      const form = new FormData();
+      form.append('audio', blob, 'chunk.webm');
+      const lang = WHISPER_LANG[$('langSelect').value] || '';
+      if (lang) form.append('language', lang);
+      const r = await fetch('/api/transcribe', { method: 'POST', body: form });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      const text = (d.text || '').trim();
+      if (text){
+        segments.push({ startMs, endMs: startMs + CHUNK_MS, text });
+        segments.sort((a, b) => a.startMs - b.startMs);
+        renderTranscript();
+      }
+    } catch (err) {
+      toast('A chunk failed to transcribe: ' + (err && err.message || err));
+    } finally {
+      pendingCount--; renderCaption();
+    }
+  })();
+  pendingPromises.add(p);
+  p.finally(() => pendingPromises.delete(p));
+}
+
+function waitWhilePaused(){
+  if (!paused) return Promise.resolve();
+  return new Promise(res => { resumeGate = res; });
+}
+
+async function chunkLoop(stream){
+  while (listening){
+    await waitWhilePaused();
+    if (!listening) break;
+    const chunkStartMs = elapsedMs();
+    let blob;
+    try { blob = await recordChunk(stream, CHUNK_MS); }
+    catch (err) { break; } // stream ended (tab closed / sharing stopped)
+    if (!listening) break;
+    if (blob.size > 800) transcribeChunk(blob, chunkStartMs);
+  }
+}
+
+function stopCaptureTracks(){
+  if (captureStreamRef){ captureStreamRef.getTracks().forEach(t => t.stop()); captureStreamRef = null; }
+}
+
+/* ---------------- Start / pause / stop ---------------- */
+async function start(){
+  clearError();
+  segments = []; interimStart = {}; currentInterim = ''; pendingCount = 0; pendingPromises = new Set();
+  startTime = Date.now(); pausedMs = 0; paused = false; listening = true;
+
+  if (mode === 'mic'){
+    try {
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+      probe.getTracks().forEach(t => t.stop());
+    } catch (err) {
+      showError('Could not access your microphone: ' + (err && err.message || err));
+      listening = false; return;
+    }
+    recognition = buildRecognition();
+    try { recognition.start(); }
+    catch (err) { showError('Could not start recognition: ' + (err && err.message || err)); listening = false; return; }
+
+  } else if (mode === 'tab'){
+    let disp;
+    try {
+      disp = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    } catch (err) {
+      listening = false;
+      if (!(err && err.name === 'NotAllowedError')) showError('Could not start capture: ' + (err && err.message || err));
+      return;
+    }
+    const audioTracks = disp.getAudioTracks();
+    disp.getVideoTracks().forEach(t => t.stop()); // frames are never needed — only audio
+    if (!audioTracks.length){
+      disp.getTracks().forEach(t => t.stop());
+      showError('No audio was shared. Try again and tick "Share tab audio" (or "Share system audio") in the picker.');
+      listening = false; return;
+    }
+    captureStreamRef = new MediaStream(audioTracks);
+    audioTracks[0].addEventListener('ended', () => { if (listening) stop(); });
+    chunkLoop(captureStreamRef);
+
+  } else if (mode === 'video'){
+    const v = $('videoEl');
+    if (!v.src){ showError('Load a video file first.'); listening = false; return; }
+    let ms;
+    try { ms = v.captureStream ? v.captureStream() : v.mozCaptureStream(); }
+    catch (err) { showError('This browser cannot capture audio from a video element.'); listening = false; return; }
+    v.muted = true; // avoid double playback — captureStream still receives the decoded audio
+    try { await v.play(); } catch (e) {}
+    await new Promise(res => setTimeout(res, 200)); // let the first audio frames attach
+    const audioTracks = ms.getAudioTracks();
+    if (!audioTracks.length){
+      showError('No audio track was found in this video.');
+      listening = false; return;
+    }
+    captureStreamRef = new MediaStream(audioTracks);
+    chunkLoop(captureStreamRef);
+  }
+
+  $('setup').style.display = 'none';
+  $('result').classList.remove('show');
+  $('live').classList.add('show');
+  $('liveStatus').classList.remove('paused');
+  $('statusText').textContent = 'Listening';
+  $('pauseBtn').textContent = 'Pause';
+  renderCaption();
+  renderTranscript();
+  toast(mode === 'mic' ? 'Listening — speak or play your audio now' : 'Capturing — audio is being transcribed in short chunks');
+}
+
+function togglePause(){
+  if (mode === 'mic'){
+    if (!recognition) return;
+    if (!paused){
+      paused = true; pauseStart = Date.now();
+      try { recognition.stop(); } catch (e) {}
+      $('liveStatus').classList.add('paused'); $('statusText').textContent = 'Paused'; $('pauseBtn').textContent = 'Resume';
+    } else {
+      pausedMs += Date.now() - pauseStart; paused = false;
+      recognition = buildRecognition();
+      try { recognition.start(); } catch (e) {}
+      $('liveStatus').classList.remove('paused'); $('statusText').textContent = 'Listening'; $('pauseBtn').textContent = 'Pause';
+    }
+    return;
+  }
+
+  // tab / video chunked modes
+  if (!paused){
+    paused = true; pauseStart = Date.now();
+    if (currentChunkRecorder && currentChunkRecorder.state !== 'inactive'){ try { currentChunkRecorder.stop(); } catch (e) {} }
+    if (mode === 'video') $('videoEl').pause();
+    $('liveStatus').classList.add('paused'); $('statusText').textContent = 'Paused'; $('pauseBtn').textContent = 'Resume';
+  } else {
+    pausedMs += Date.now() - pauseStart; paused = false;
+    if (mode === 'video') $('videoEl').play().catch(() => {});
+    if (resumeGate){ resumeGate(); resumeGate = null; }
+    $('liveStatus').classList.remove('paused'); $('statusText').textContent = 'Listening'; $('pauseBtn').textContent = 'Pause';
+  }
+}
+
+async function stop(){
+  listening = false;
+  if (paused && resumeGate){ resumeGate(); resumeGate = null; }
+  paused = false;
+
+  if (mode === 'mic'){
+    if (recognition){ try { recognition.stop(); } catch (e) {} recognition = null; }
+  } else {
+    if (currentChunkRecorder && currentChunkRecorder.state !== 'inactive'){ try { currentChunkRecorder.stop(); } catch (e) {} }
+    stopCaptureTracks();
+    if (mode === 'video') $('videoEl').pause();
+    if (pendingPromises.size){
+      toast('Finishing the last chunk(s)…');
+      await Promise.allSettled([...pendingPromises]);
+    }
+  }
+  finish();
+}
+
+function stopUI(){
+  $('live').classList.remove('show');
+  $('setup').style.display = '';
+}
+
+function finish(){
+  const dur = elapsedMs();
+  $('live').classList.remove('show');
+  $('metaDur').textContent = fmtTime(dur);
+  $('metaLines').textContent = String(segments.length);
+  $('metaSource').textContent = MODE_INFO[mode].label;
+  $('editArea').value = segments.map(s => s.text).join('\n');
+  $('result').classList.add('show');
+  toast(segments.length ? 'Stopped — ready to save' : 'Stopped — no speech was captured');
+}
+
+function reset(){
+  segments = []; interimStart = {}; currentInterim = '';
+  $('result').classList.remove('show');
+  $('setup').style.display = '';
+  clearError();
+}
+
+/* ---------------- Export ---------------- */
+function download(filename, content, type){
+  const blob = new Blob([content], { type: type + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function tsStamp(){ return new Date().toISOString().replace(/[:.]/g,'-').slice(0,19); }
+
+function toSrt(){
+  return segments.map((s, i) =>
+    `${i + 1}\n${fmtSrtTime(s.startMs)} --> ${fmtSrtTime(Math.max(s.endMs, s.startMs + 800))}\n${s.text}\n`
+  ).join('\n');
+}
+function toVtt(){
+  return 'WEBVTT\n\n' + segments.map(s =>
+    `${fmtVttTime(s.startMs)} --> ${fmtVttTime(Math.max(s.endMs, s.startMs + 800))}\n${s.text}\n`
+  ).join('\n');
+}
+
+$('copyBtn').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('editArea').value); toast('Copied to clipboard'); }
+  catch (e) { toast('Could not copy — select and copy manually'); }
+});
+$('dlTxt').addEventListener('click', () => download(`transcript-${tsStamp()}.txt`, $('editArea').value, 'text/plain'));
+$('dlSrt').addEventListener('click', () => {
+  if (!segments.length) { toast('Nothing to export'); return; }
+  download(`transcript-${tsStamp()}.srt`, toSrt(), 'application/x-subrip');
+});
+$('dlVtt').addEventListener('click', () => {
+  if (!segments.length) { toast('Nothing to export'); return; }
+  download(`transcript-${tsStamp()}.vtt`, toVtt(), 'text/vtt');
+});
+
+if (baseSupported){
+  initModeAvailability();
+  $('startBtn').addEventListener('click', start);
+  $('pauseBtn').addEventListener('click', togglePause);
+  $('stopBtn').addEventListener('click', stop);
+  $('againBtn').addEventListener('click', reset);
+}
+</script>
+</body>
+</html>

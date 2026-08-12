@@ -60,6 +60,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <circle cx="10" cy="10.5" r="2.5" />
     </svg>
   ),
+  mic: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <rect x="7.5" y="2.5" width="5" height="9" rx="2.5" />
+      <path d="M4.5 9.5v.5a5.5 5.5 0 0 0 11 0v-.5M10 15.5v2.5M7.3 18h5.4" />
+    </svg>
+  ),
 };
 
 const ICON_STYLE: Record<string, { bg: string; color: string }> = {
@@ -72,6 +78,7 @@ const ICON_STYLE: Record<string, { bg: string; color: string }> = {
   table:      { bg: "#ECFDF5", color: "#059669" },
   whiteboard: { bg: "#FEF2F2", color: "#E11D48" },
   record:     { bg: "#FEF2F2", color: "#DC2626" },
+  mic:        { bg: "#F5F3FF", color: "#7C3AED" },
 };
 
 export default function AppCard({ app }: { app: App }) {
