@@ -1,4 +1,4 @@
-import AppCard from "@/components/AppCard";
+import AppGrid from "@/components/AppGrid";
 import { getApps } from "@/data/apps";
 
 // Catalog is managed from /admin, so render at request time.
@@ -23,11 +23,7 @@ export default async function Home() {
         {apps.length === 0 ? (
           <p className="text-sm text-ink-muted">No apps yet.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {apps.map((app) => (
-              <AppCard key={app.id} app={app} />
-            ))}
-          </div>
+          <AppGrid apps={apps} />
         )}
       </div>
     </main>

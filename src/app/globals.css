@@ -96,3 +96,9 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+
+/* Homepage grid: cards fade/slide in on load — see AppGrid.tsx */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -81,7 +81,7 @@ const ICON_STYLE: Record<string, { bg: string; color: string }> = {
   mic:        { bg: "#F5F3FF", color: "#7C3AED" },
 };
 
-export default function AppCard({ app }: { app: App }) {
+export default function AppCard({ app, isNew }: { app: App; isNew?: boolean }) {
   const iconKey = app.icon ?? "";
   const iconStyle = ICON_STYLE[iconKey];
   const iconNode = ICONS[iconKey];
@@ -114,8 +114,14 @@ export default function AppCard({ app }: { app: App }) {
       href={app.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col bg-surface-raised border border-surface-border rounded-xl shadow-card hover:bg-surface-hover hover:shadow-dropdown transition-shadow duration-150 overflow-hidden min-h-[11rem]"
+      className="group relative flex flex-col bg-surface-raised border border-surface-border rounded-xl shadow-card hover:bg-surface-hover hover:shadow-dropdown hover:-translate-y-0.5 transition-[box-shadow,transform,background-color] duration-150 overflow-hidden min-h-[11rem]"
     >
+      {isNew && (
+        <span className="absolute top-3 right-3 z-10 bg-success text-white text-[10px] font-bold tracking-wide uppercase rounded-full px-2 py-0.5 shadow-card">
+          New
+        </span>
+      )}
+
       {app.thumbnail && (
         <div className="relative w-full h-36 bg-surface-active flex-shrink-0">
           <Image src={app.thumbnail} alt={app.name} fill className="object-cover" />
