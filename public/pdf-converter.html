@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PDF Converter</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F5F4F0;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F7F4;
+  --border:#E2E1DC;
+  --text-dark:#18181A;
+  --text-mid:#4A4A50;
+  --text-muted:#8A8A92;
+  --brand:#4573D9;
+  --brand-light:#EEF2FB;
+  --success:#16A34A;
+  --error:#DC2626;
+  --error-bg:#FEF2F2;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.06);
+  --radius:16px;
+  --radius-sm:8px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem 4rem;}
+.page{max-width:720px;margin:0 auto;}
+
+/* Header */
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-muted);text-decoration:none;letter-spacing:.03em;margin-bottom:14px;}
+.back-link:hover{color:var(--brand);}
+.header{margin-bottom:1.5rem;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.header-title{font-size:22px;font-weight:600;color:var(--text-dark);letter-spacing:-.01em;margin-bottom:4px;}
+.header-sub{font-size:14px;color:var(--text-muted);line-height:1.5;}
+.format-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.fmt-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;margin-bottom:1rem;}
+.tab-btn{flex:1;padding:9px;border:none;background:none;border-radius:6px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.tab-btn.active{background:var(--surface);color:var(--text-dark);box-shadow:var(--shadow-card);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-card);margin-bottom:1rem;overflow:hidden;}
+
+/* Write tab */
+.write-body{padding:1.25rem;}
+.field-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;}
+.title-input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-alt);font-family:var(--font);font-size:14px;color:var(--text-dark);outline:none;transition:border-color .15s;margin-bottom:12px;}
+.title-input:focus{border-color:var(--brand);}
+#editor-wrap{border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;}
+#editor-wrap .ql-toolbar{border:none;border-bottom:1px solid var(--border);background:var(--surface-alt);}
+#editor-wrap .ql-container{border:none;font-family:var(--font);font-size:14px;min-height:220px;max-height:420px;overflow-y:auto;}
+.editor-loading{padding:2rem;text-align:center;color:var(--text-muted);font-size:13px;}
+.btn-add{width:100%;padding:11px;background:var(--text-dark);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.btn-add:not(:disabled):hover{opacity:.85;}
+.btn-add:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Upload tab */
+.upload-body{padding:1.25rem;}
+.upload-card{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:2.25rem 1.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
+.upload-card:hover,.upload-card.drag-over{border-color:var(--brand);background:var(--brand-light);}
+.upload-icon{font-size:32px;margin-bottom:10px;opacity:.4;}
+.upload-title{font-size:14px;font-weight:600;color:var(--text-dark);margin-bottom:3px;}
+.upload-sub{font-size:12px;color:var(--text-muted);}
+#file-input{display:none;}
+.upload-error{font-size:12px;color:var(--error);margin-top:10px;display:none;}
+
+/* Queue */
+.queue-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem 0;}
+.queue-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);}
+.btn-link{background:none;border:none;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;padding:0;}
+.btn-link:hover{color:var(--error);}
+.queue-list{padding:.5rem 0;}
+.queue-item{display:flex;align-items:center;gap:12px;padding:9px 1.25rem;transition:background .1s;}
+.queue-item:hover{background:var(--surface-alt);}
+.qi-icon{font-size:20px;flex-shrink:0;width:24px;text-align:center;}
+.qi-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
+.qi-dot.converting{background:var(--brand);animation:pulse 1.2s ease-in-out infinite;}
+.qi-dot.done{background:var(--success);}
+.qi-dot.error{background:var(--error);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.qi-info{flex:1;min-width:0;}
+.qi-title{font-size:13px;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qi-sub{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.qi-msg{font-size:11px;margin-top:1px;}
+.qi-msg.error{color:var(--error);}
+.qi-msg.done{color:var(--success);}
+.qi-msg.note{color:var(--text-muted);}
+.qi-remove{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:2px 6px;border-radius:4px;flex-shrink:0;line-height:1;font-family:var(--font);}
+.qi-remove:hover{background:var(--surface-alt);color:var(--error);}
+.divider{height:1px;background:var(--border);margin:.25rem 0;}
+
+/* Output options */
+.output-section{padding:1rem 1.25rem;}
+.merge-row{display:flex;align-items:center;gap:9px;margin-bottom:10px;cursor:pointer;user-select:none;}
+.merge-row input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;}
+.merge-row span{font-size:13px;color:var(--text-dark);font-weight:500;}
+.merge-name{width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-alt);font-family:var(--font);font-size:13px;color:var(--text-dark);outline:none;display:none;margin-top:2px;}
+.merge-name.show{display:block;}
+.btn-convert{width:100%;font-size:15px;padding:13px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-weight:600;cursor:pointer;transition:opacity .15s;margin-top:12px;}
+.btn-convert:disabled{opacity:.4;cursor:not-allowed;}
+.btn-convert:not(:disabled):hover{opacity:.88;}
+.legal{font-size:11px;color:var(--text-muted);padding:.75rem 1.25rem 1rem;border-top:1px solid var(--border);}
+
+/* Offscreen render root — html2canvas needs the element it's told to capture
+   to be a genuinely plain, statically-positioned box (position:fixed/absolute
+   on it — even wrapped — produced a correctly-SIZED but blank canvas in
+   testing). Hiding it is done by a normal-flow parent with height:0 +
+   overflow:hidden instead, which doesn't affect how the child measures. */
+.pdf-render-clip{height:0;overflow:hidden;}
+.pdf-render-root{width:760px;background:#fff;padding:0;font-family:var(--font);color:#18181A;font-size:14px;line-height:1.6;}
+.pdf-render-root img{max-width:100%;}
+.pdf-render-root h1,.pdf-render-root h2,.pdf-render-root h3{margin:.6em 0 .3em;line-height:1.3;}
+.pdf-render-root p{margin:0 0 .7em;}
+.pdf-render-root .pdf-page-break{page-break-before:always;}
+.pdf-render-root .pdf-txt{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;}
+.pdf-render-root .pdf-image-page{display:flex;align-items:center;justify-content:center;min-height:900px;}
+.pdf-render-root .pdf-image-page img{max-height:1000px;}
+
+/* Responsive */
+@media(max-width:480px){
+  body{padding:1.25rem .75rem 3rem;}
+  .write-body,.upload-body,.output-section{padding-left:1rem;padding-right:1rem;}
+  .queue-header{padding:.75rem 1rem 0;}
+  .queue-item{padding:9px 1rem;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <a class="back-link" href="/">← Back to apps</a>
+    <div class="eyebrow">Utility · Documents</div>
+    <div class="header-title">PDF Converter</div>
+    <div class="header-sub">Write rich text or upload files, convert to PDF, download instantly. Runs entirely in your browser — nothing is uploaded.</div>
+    <div class="format-row">
+      <span class="fmt-badge">Rich Text</span>
+      <span class="fmt-badge">TXT</span>
+      <span class="fmt-badge">Markdown</span>
+      <span class="fmt-badge">Word (.docx)</span>
+      <span class="fmt-badge">Images</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-btn-write" onclick="switchTab('write')">✍️ Write</button>
+    <button class="tab-btn" id="tab-btn-upload" onclick="switchTab('upload')">📤 Upload</button>
+  </div>
+
+  <!-- Write tab -->
+  <div class="tab-panel active" id="tab-write">
+    <div class="card">
+      <div class="write-body">
+        <div class="field-label">Document Title</div>
+        <input class="title-input" id="doc-title" type="text" placeholder="Untitled document" maxlength="120"/>
+        <div class="field-label">Content</div>
+        <div id="editor-wrap">
+          <div class="editor-loading" id="editor-loading">Loading editor…</div>
+          <div id="editor" style="display:none"></div>
+        </div>
+        <button class="btn-add" id="btn-add-editor" onclick="addEditorToQueue()">+ Add to Queue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload tab -->
+  <div class="tab-panel" id="tab-upload">
+    <div class="card">
+      <div class="upload-body">
+        <div class="upload-card" id="upload-zone">
+          <input type="file" id="file-input" multiple accept=".txt,.md,.markdown,.docx,.jpg,.jpeg,.png,.webp,.gif"/>
+          <div class="upload-icon">📤</div>
+          <div class="upload-title">Drop files here</div>
+          <div class="upload-sub">or click to browse — you can select multiple files</div>
+        </div>
+        <div class="upload-error" id="upload-error"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue + output (shown when queue is non-empty) -->
+  <div class="card" id="queue-section" style="display:none">
+    <div class="queue-header">
+      <span class="queue-title" id="queue-label">0 items queued</span>
+      <button class="btn-link" onclick="clearQueue()">Clear all</button>
+    </div>
+    <div class="queue-list" id="queue-list"></div>
+    <div class="divider"></div>
+    <div class="output-section">
+      <label class="merge-row">
+        <input type="checkbox" id="merge-toggle" onchange="onMergeToggle()"/>
+        <span>Merge all into one PDF</span>
+      </label>
+      <input class="merge-name" id="merge-name" type="text" placeholder="combined-document" maxlength="80"/>
+      <button class="btn-convert" id="btn-convert" disabled onclick="convertAll()">Add content to convert</button>
+    </div>
+    <div class="legal">Conversion happens locally in your browser. Nothing you write or upload leaves your device.</div>
+  </div>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Lazy CDN loading — mirrors myexcel.html's ensureXLSX() pattern: load once,
+// reuse on every subsequent call, so the page stays light until a feature is
+// actually used.
+// ---------------------------------------------------------------------------
+const LIBS = {
+  quill:    { test: () => window.Quill,        src: 'https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js' },
+  html2pdf: { test: () => window.html2pdf,      src: 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js' },
+  mammoth:  { test: () => window.mammoth,       src: 'https://cdn.jsdelivr.net/npm/mammoth@1.9.1/mammoth.browser.min.js' },
+  marked:   { test: () => window.marked,        src: 'https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.2/marked.min.js' },
+};
+const libPromises = {};
+function ensureLib(name) {
+  if (libPromises[name]) return libPromises[name];
+  const lib = LIBS[name];
+  libPromises[name] = new Promise((resolve, reject) => {
+    if (lib.test()) return resolve();
+    const s = document.createElement('script');
+    s.src = lib.src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load ${name} from CDN.`));
+    document.head.appendChild(s);
+  });
+  return libPromises[name];
+}
+function ensureCss(href) {
+  if (document.querySelector(`link[href="${href}"]`)) return;
+  const l = document.createElement('link');
+  l.rel = 'stylesheet'; l.href = href;
+  document.head.appendChild(l);
+}
+
+// ---------------------------------------------------------------------------
+// Editor (Write tab)
+// ---------------------------------------------------------------------------
+let quill = null;
+async function initEditor() {
+  ensureCss('https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css');
+  try {
+    await ensureLib('quill');
+  } catch (e) {
+    document.getElementById('editor-loading').textContent = 'Could not load the editor — check your connection and reload.';
+    return;
+  }
+  document.getElementById('editor-loading').style.display = 'none';
+  document.getElementById('editor').style.display = 'block';
+  quill = new Quill('#editor', {
+    theme: 'snow',
+    placeholder: 'Start typing…',
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ color: [] }, { background: [] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        [{ align: [] }],
+        ['blockquote', 'link', 'image'],
+        ['clean'],
+      ],
+    },
+  });
+  document.getElementById('btn-add-editor').disabled = false;
+}
+initEditor();
+
+function editorIsEmpty() {
+  if (!quill) return true;
+  const text = quill.getText().trim();
+  const hasImage = quill.root.querySelector('img');
+  return !text && !hasImage;
+}
+
+function addEditorToQueue() {
+  if (editorIsEmpty()) { return; }
+  const titleInput = document.getElementById('doc-title');
+  const title = titleInput.value.trim() || 'Untitled document';
+  addQueueItem({
+    kind: 'editor',
+    title,
+    html: sanitizeHtml(quill.root.innerHTML),
+    sizeLabel: 'Rich text document',
+  });
+  // Reset for the next entry — matches the "queue several things" flow.
+  quill.setContents([]);
+  titleInput.value = '';
+  switchTab('upload'); // nudge toward the queue/convert step, upload tab shows the queue too
+}
+
+// ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
+function switchTab(name) {
+  document.getElementById('tab-write').classList.toggle('active', name === 'write');
+  document.getElementById('tab-upload').classList.toggle('active', name === 'upload');
+  document.getElementById('tab-btn-write').classList.toggle('active', name === 'write');
+  document.getElementById('tab-btn-upload').classList.toggle('active', name === 'upload');
+}
+
+// ---------------------------------------------------------------------------
+// Upload (Upload tab)
+// ---------------------------------------------------------------------------
+const EXT_KIND = { txt: 'txt', md: 'md', markdown: 'md', docx: 'docx', jpg: 'image', jpeg: 'image', png: 'image', webp: 'image', gif: 'image' };
+const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB — generous for text/docx/images, protects the tab since conversion runs on the main thread
+
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
+
+function handleFiles(fileList) {
+  const errors = [];
+  for (const file of fileList) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const kind = EXT_KIND[ext];
+    if (!kind) { errors.push(`"${file.name}" — .${ext || '?'} isn't supported yet.`); continue; }
+    if (file.size > MAX_FILE_BYTES) { errors.push(`"${file.name}" — exceeds the 20 MB limit.`); continue; }
+    addQueueItem({
+      kind,
+      title: file.name.replace(/\.[^.]+$/, ''),
+      file,
+      sizeLabel: `${kind.toUpperCase()} · ${(file.size / 1024).toFixed(0)} KB`,
+    });
+  }
+  const errBox = document.getElementById('upload-error');
+  if (errors.length) { errBox.innerHTML = errors.map(esc).join('<br>'); errBox.style.display = 'block'; }
+  else { errBox.style.display = 'none'; }
+}
+
+// ---------------------------------------------------------------------------
+// Queue
+// ---------------------------------------------------------------------------
+let queue = [];
+let idSeq = 0;
+let isConverting = false;
+
+function addQueueItem(partial) {
+  queue.push(Object.assign({ id: ++idSeq, status: 'waiting', error: null, note: null }, partial));
+  renderQueue();
+}
+
+function removeQueueItem(id) {
+  queue = queue.filter(q => q.id !== id);
+  renderQueue();
+}
+
+function clearQueue() {
+  if (isConverting) return;
+  queue = [];
+  renderQueue();
+}
+
+const KIND_ICON = { editor: '✍️', txt: '📄', md: '📝', docx: '📃', image: '🖼️' };
+const KIND_LABEL = { editor: 'Rich text', txt: 'Text', md: 'Markdown', docx: 'Word', image: 'Image' };
+
+function renderQueue() {
+  const section = document.getElementById('queue-section');
+  section.style.display = queue.length ? 'block' : 'none';
+  document.getElementById('queue-label').textContent = queue.length === 1 ? '1 item queued' : `${queue.length} items queued`;
+
+  document.getElementById('queue-list').innerHTML = queue.map(item => {
+    let msgHtml = '';
+    if (item.status === 'converting') msgHtml = `<div class="qi-msg">Converting…</div>`;
+    else if (item.status === 'done')  msgHtml = `<div class="qi-msg done">✓ ${esc(item.note || 'Saved')}</div>`;
+    else if (item.status === 'error') msgHtml = `<div class="qi-msg error">${esc(item.error)}</div>`;
+    else if (item.note)               msgHtml = `<div class="qi-msg note">${esc(item.note)}</div>`;
+    return `<div class="queue-item">
+      <div class="qi-icon">${KIND_ICON[item.kind]}</div>
+      <div class="qi-dot ${item.status}"></div>
+      <div class="qi-info">
+        <div class="qi-title">${esc(item.title)}</div>
+        <div class="qi-sub">${esc(item.sizeLabel || KIND_LABEL[item.kind])}</div>
+        ${msgHtml}
+      </div>
+      <button class="qi-remove" onclick="removeQueueItem(${item.id})" title="Remove">×</button>
+    </div>`;
+  }).join('');
+
+  updateConvertBtn();
+}
+
+function onMergeToggle() {
+  const on = document.getElementById('merge-toggle').checked;
+  document.getElementById('merge-name').classList.toggle('show', on);
+  updateConvertBtn();
+}
+
+function updateConvertBtn() {
+  const btn = document.getElementById('btn-convert');
+  const merge = document.getElementById('merge-toggle').checked;
+  if (isConverting) { btn.disabled = true; btn.textContent = 'Converting…'; return; }
+  if (!queue.length) { btn.disabled = true; btn.textContent = 'Add content to convert'; return; }
+  btn.disabled = false;
+  btn.textContent = merge
+    ? `Merge & Download ${queue.length} item${queue.length === 1 ? '' : 's'} as 1 PDF`
+    : `Convert ${queue.length} item${queue.length === 1 ? '' : 's'} to PDF`;
+}
+
+// ---------------------------------------------------------------------------
+// Format → HTML normalization (every input funnels through this before
+// rendering, per the unified pipeline in the plan)
+// ---------------------------------------------------------------------------
+function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Lightweight defensive sanitization: strip <script>/<style>/<iframe> and any
+// on*="" event-handler attributes before content ever gets injected via
+// innerHTML. Not a full sanitizer library — proportionate to the trust level
+// here (a user's own pasted/uploaded content), but real protection against a
+// stray malicious .docx someone sent them running script in the page.
+function sanitizeHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  tmp.querySelectorAll('script,style,iframe,object,embed').forEach(el => el.remove());
+  tmp.querySelectorAll('*').forEach(el => {
+    [...el.attributes].forEach(attr => {
+      const isEventAttr = /^on/i.test(attr.name);
+      const isJsHref = (attr.name === 'href' || attr.name === 'src') && /^\s*javascript:/i.test(attr.value);
+      if (isEventAttr || isJsHref) el.removeAttribute(attr.name);
+    });
+  });
+  return tmp.innerHTML;
+}
+
+async function itemToHtml(item) {
+  if (item.kind === 'editor') return item.html;
+
+  if (item.kind === 'txt') {
+    const text = await item.file.text();
+    return `<div class="pdf-txt">${escapeHtml(text)}</div>`;
+  }
+
+  if (item.kind === 'md') {
+    await ensureLib('marked');
+    const text = await item.file.text();
+    return `<div class="pdf-md">${sanitizeHtml(marked.parse(text))}</div>`;
+  }
+
+  if (item.kind === 'docx') {
+    await ensureLib('mammoth');
+    const arrayBuffer = await item.file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer });
+    return `<div class="pdf-docx">${sanitizeHtml(result.value)}</div>`;
+  }
+
+  if (item.kind === 'image') {
+    const dataUrl = await fileToDataUrl(item.file);
+    return `<div class="pdf-image-page"><img src="${dataUrl}"/></div>`;
+  }
+
+  throw new Error(`Unsupported item kind: ${item.kind}`);
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function slugFilename(title) {
+  let s = (title || 'document').trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 60);
+  return (s || 'document') + '.pdf';
+}
+
+// ---------------------------------------------------------------------------
+// Rendering — one offscreen container per render, run through html2pdf.js
+// (bundles html2canvas + jsPDF + CSS page-break-aware pagination). Produces a
+// Blob rather than calling html2pdf's own .save(), so the caller controls
+// exactly where it lands (see saveBlob below).
+// ---------------------------------------------------------------------------
+async function renderHtmlToPdfBlob(html) {
+  await ensureLib('html2pdf');
+  const clip = document.createElement('div');
+  clip.className = 'pdf-render-clip';
+  const container = document.createElement('div');
+  container.className = 'pdf-render-root';
+  container.innerHTML = html;
+  clip.appendChild(container);
+  document.body.appendChild(clip);
+  try {
+    return await html2pdf().set({
+      margin: 10,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] },
+    }).from(container).outputPdf('blob');
+  } finally {
+    clip.remove();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Save target — always ask where to save, via the File System Access API
+// (native "Save As" dialog, folder + filename, Chrome/Edge/Opera only — no
+// website can force this dialog in Firefox/Safari, there's no API for it).
+// Called BEFORE the render work for each item so the prompt fires as close to
+// the triggering click as possible: browsers only allow showSaveFilePicker()
+// within a few seconds of real user input ("transient activation"), and that
+// window doesn't reset just because the page is still busy. In a multi-item
+// batch, items after the first can outrun that window — when that happens
+// (or on browsers without the API at all) we fall back to a normal download
+// into the browser's default folder and say so in the item's status.
+async function pickSaveTarget(filename) {
+  if (!window.showSaveFilePicker) return { handle: null, cancelled: false };
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{ description: 'PDF document', accept: { 'application/pdf': ['.pdf'] } }],
+    });
+    return { handle, cancelled: false };
+  } catch (e) {
+    if (e.name === 'AbortError') return { handle: null, cancelled: true }; // user hit Cancel
+    return { handle: null, cancelled: false }; // no picker available right now — fall back silently
+  }
+}
+
+async function saveBlob(blob, handle, filename) {
+  if (handle) {
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return true; // saved exactly where the user chose
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return false; // saved to the browser's default downloads folder instead
+}
+
+async function convertAll() {
+  if (isConverting || !queue.length) return;
+  isConverting = true;
+  updateConvertBtn();
+
+  const merge = document.getElementById('merge-toggle').checked;
+
+  if (merge) {
+    await convertMerged();
+  } else {
+    await convertSeparately();
+  }
+
+  isConverting = false;
+  updateConvertBtn();
+}
+
+async function convertSeparately() {
+  for (const item of queue) {
+    item.status = 'converting'; item.error = null; item.note = null;
+    renderQueue();
+
+    const filename = slugFilename(item.title);
+    const { handle, cancelled } = await pickSaveTarget(filename);
+    if (cancelled) {
+      item.status = 'waiting';
+      item.note = 'Save cancelled.';
+      renderQueue();
+      continue;
+    }
+
+    try {
+      const html = await itemToHtml(item);
+      const blob = await renderHtmlToPdfBlob(html);
+      const savedWhereChosen = await saveBlob(blob, handle, filename);
+      item.status = 'done';
+      item.note = savedWhereChosen
+        ? 'Saved to the location you chose.'
+        : "Downloaded to your browser's default folder (couldn't show a save dialog for this file).";
+    } catch (e) {
+      item.status = 'error';
+      item.error = e.message || 'Conversion failed.';
+    }
+    renderQueue();
+    await new Promise(r => setTimeout(r, 400));
+  }
+}
+
+async function convertMerged() {
+  const nameInput = document.getElementById('merge-name').value.trim();
+  const filename = slugFilename(nameInput || 'combined-document');
+
+  // Ask where to save up front — before any conversion work — so the dialog
+  // fires as close to the click as the browser will allow.
+  const { handle, cancelled } = await pickSaveTarget(filename);
+  if (cancelled) return;
+
+  queue.forEach(item => { item.status = 'converting'; item.error = null; item.note = null; });
+  renderQueue();
+
+  const parts = [];
+  let anyOk = false;
+  for (const [i, item] of queue.entries()) {
+    try {
+      const html = await itemToHtml(item);
+      parts.push(`<div${i > 0 ? ' class="pdf-page-break"' : ''}>${html}</div>`);
+      item.status = 'done';
+      anyOk = true;
+    } catch (e) {
+      item.status = 'error';
+      item.error = e.message || 'Conversion failed.';
+    }
+  }
+
+  if (!anyOk) { renderQueue(); return; }
+
+  try {
+    const blob = await renderHtmlToPdfBlob(parts.join(''));
+    const savedWhereChosen = await saveBlob(blob, handle, filename);
+    const note = savedWhereChosen
+      ? 'Saved to the location you chose.'
+      : "Downloaded to your browser's default folder (couldn't show a save dialog for this file).";
+    queue.forEach(item => { if (item.status === 'done') item.note = note; });
+  } catch (e) {
+    alert('Could not generate the combined PDF: ' + (e.message || 'unknown error'));
+  }
+  renderQueue();
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+</script>
+</body>
+</html>

@@ -66,6 +66,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M4.5 9.5v.5a5.5 5.5 0 0 0 11 0v-.5M10 15.5v2.5M7.3 18h5.4" />
     </svg>
   ),
+  pdf: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M6 2.5h6l3 3v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1z" />
+      <path d="M12 2.5v3h3" />
+      <path d="M7 11h6M7 14h4" />
+    </svg>
+  ),
 };
 
 const ICON_STYLE: Record<string, { bg: string; color: string }> = {
@@ -79,6 +86,7 @@ const ICON_STYLE: Record<string, { bg: string; color: string }> = {
   whiteboard: { bg: "#FEF2F2", color: "#E11D48" },
   record:     { bg: "#FEF2F2", color: "#DC2626" },
   mic:        { bg: "#F5F3FF", color: "#7C3AED" },
+  pdf:        { bg: "#FFFBEB", color: "#D97706" },
 };
 
 export default function AppCard({ app, isNew }: { app: App; isNew?: boolean }) {

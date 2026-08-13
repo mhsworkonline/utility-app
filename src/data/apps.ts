@@ -27,6 +27,7 @@ export const fallbackApps: App[] = [
   { id: "whiteboard", name: "Whiteboard", description: "An infinite pannable canvas for freehand drawing, sticky notes, text, and shapes — with pen, highlighter, eraser, and undo/redo.", url: "/whiteboard.html", icon: "whiteboard", tags: ["Utility", "Productivity"] },
   { id: "screen-recorder", name: "Screen Recorder", description: "Record your screen, window, or tab with optional mic and system audio — then preview and download. Runs entirely in your browser, nothing is uploaded.", url: "/screen-recorder.html", icon: "record", tags: ["Utility", "Media"] },
   { id: "live-transcriber", name: "Live Transcriber", description: "Transcribe audio from a video playing in another tab (like YouTube), an uploaded file, or your microphone — then save the transcript as TXT, SRT, or VTT.", url: "/live-transcriber.html", icon: "mic", tags: ["Utility", "Media"] },
+  { id: "pdf-converter", name: "PDF Converter", description: "Write rich text or upload TXT, Markdown, Word, and image files, then convert to a downloadable PDF — entirely in your browser.", url: "/pdf-converter.html", icon: "pdf", tags: ["Utility", "Documents"] },
 ];
 
 /** Server-side catalog fetch. Hidden apps are never returned to the homepage. */

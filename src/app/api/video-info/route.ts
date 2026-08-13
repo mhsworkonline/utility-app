@@ -30,6 +30,12 @@ function mbLabel(bytes: number | null): string {
   return `~${(bytes / 1024 / 1024).toFixed(0)} MB`;
 }
 
+// Netlify's Next.js functions have a hard ~10-26s execution ceiling (plan-
+// dependent, not configurable past it). Past a rough duration, a download is
+// unlikely to finish there even though it works fine locally — flag it so the
+// UI can warn before the user waits on a download that's likely to fail.
+const LIVE_SITE_DURATION_LIMIT_SEC = 180;
+
 function estimateSize(formats: YtFormat[], maxHeight: number): number | null {
   const combined = formats
     .filter(f => f.height && f.height <= maxHeight && f.vcodec !== "none" && f.acodec && f.acodec !== "none")
@@ -108,6 +114,8 @@ export async function POST(req: NextRequest) {
         sizeLabel: mbLabel(audioSize),
         oversized: audioSize ? audioSize > 100 * 1024 * 1024 : false,
       },
+      liveSiteRisk: Boolean(process.env.NETLIFY) && typeof info.duration === "number"
+        && info.duration > LIVE_SITE_DURATION_LIMIT_SEC,
     });
   } catch (err) {
     if (isNotFound(err))

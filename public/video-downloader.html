@@ -80,10 +80,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 .qi-info{flex:1;min-width:0;}
 .qi-platform{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);}
 .qi-url{font-size:12px;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.qi-meta{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.qi-meta.oversized{color:#DC2626;}
+.qi-meta.live-risk{color:var(--warn-text);background:var(--warn-bg);display:inline-block;padding:2px 7px;border-radius:20px;margin-top:4px;font-weight:600;}
 .qi-msg{font-size:12px;margin-top:1px;}
 .qi-msg.downloading{color:var(--brand);}
 .qi-msg.done{color:var(--success);}
 .qi-msg.error{color:#DC2626;}
+.qi-progress-bar{height:3px;border-radius:2px;background:var(--border);margin-top:5px;overflow:hidden;}
+.qi-progress-fill{height:100%;background:var(--brand);border-radius:2px;transition:width .3s ease;}
 .qi-remove{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:2px 6px;border-radius:4px;flex-shrink:0;line-height:1;font-family:var(--font);}
 .qi-remove:hover{background:var(--surface-alt);color:#DC2626;}
 
@@ -230,14 +235,38 @@ function addUrl() {
   }
 
   clearUrlError();
-  queue.push({ id: ++idSeq, url: raw, status: 'waiting', result: null });
+  const item = { id: ++idSeq, url: raw, status: 'waiting', result: null, info: null, progress: null, key: null };
+  queue.push(item);
   input.value = '';
   input.focus();
+  render();
+  fetchInfo(item);
+}
+
+// Pulls duration + estimated size per format so long/oversized videos are
+// flagged before the user commits to downloading them, instead of only
+// finding out minutes into a "Downloading…" spinner with no other detail.
+async function fetchInfo(item) {
+  try {
+    const res = await fetch('/api/video-info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: item.url })
+    });
+    if (res.ok) item.info = await res.json();
+  } catch { /* best-effort — download still works without a preview */ }
   render();
 }
 
 function removeItem(id) {
-  if (isRunning && queue.find(q => q.id === id)?.status === 'downloading') return;
+  const item = queue.find(q => q.id === id);
+  if (!item) return;
+  if (item.status === 'downloading') {
+    // Cancel the in-flight job server-side; the running poll loop in
+    // startDownloads() will see the resulting error and settle the item.
+    if (item.key) fetch('/api/video-download?key=' + encodeURIComponent(item.key), { method: 'DELETE' }).catch(() => {});
+    return;
+  }
   queue = queue.filter(q => q.id !== id);
   render();
 }
@@ -254,7 +283,7 @@ function selectFmt(el, fmt) {
   document.querySelectorAll('.fmt-option').forEach(e => e.classList.remove('selected'));
   el.classList.add('selected');
   selectedFmt = fmt;
-  updateBtn();
+  render(); // per-item size estimates depend on the selected format
 }
 
 function render() {
@@ -268,25 +297,68 @@ function render() {
   list.innerHTML = queue.map(item => {
     const platform = platformOf(item.url);
     const short = item.url.length > 56 ? item.url.slice(0, 53) + '…' : item.url;
-    const canRemove = !isRunning || item.status !== 'downloading';
+
+    let metaHtml = '';
+    if (item.status === 'waiting' && item.info) {
+      const dur = fmtDuration(item.info.duration);
+      let sizeLabel = null, oversized = false;
+      if (selectedFmt === 'mp3') {
+        sizeLabel = item.info.audio?.sizeLabel; oversized = !!item.info.audio?.oversized;
+      } else if (selectedFmt) {
+        const f = (item.info.formats || []).find(f => String(f.height) === selectedFmt);
+        sizeLabel = f?.sizeLabel; oversized = !!f?.oversized;
+      }
+      const bits = [dur, sizeLabel].filter(Boolean);
+      if (bits.length) {
+        metaHtml = `<div class="qi-meta${oversized ? ' oversized' : ''}">${esc(bits.join(' · '))}${oversized ? ' — exceeds 100 MB limit' : ''}</div>`;
+      }
+      if (item.info.liveSiteRisk) {
+        metaHtml += `<div class="qi-meta live-risk">⚠ Long video — may not finish on the live site (hosting time limit). Works reliably when run locally.</div>`;
+      }
+    }
 
     let msgHtml = '';
-    if (item.status === 'downloading') msgHtml = `<div class="qi-msg downloading">Downloading…</div>`;
+    if (item.status === 'downloading') {
+      const p = item.progress;
+      let barHtml = '';
+      if (p && p.percent != null) {
+        const bits = [`${p.percent.toFixed(1)}%`];
+        if (p.fragment && p.totalFragments) bits.push(`frag ${p.fragment}/${p.totalFragments}`);
+        if (p.eta) bits.push(`ETA ${esc(p.eta)}`);
+        msgHtml = `<div class="qi-msg downloading">Downloading… ${esc(bits.join(' · '))}</div>`;
+        barHtml = `<div class="qi-progress-bar"><div class="qi-progress-fill" style="width:${Math.min(100, Math.max(0, p.percent))}%"></div></div>`;
+      } else {
+        msgHtml = `<div class="qi-msg downloading">Downloading… (starting up)</div>`;
+      }
+      msgHtml += barHtml;
+    }
     else if (item.status === 'done')    msgHtml = `<div class="qi-msg done">✓ ${esc(item.result)}</div>`;
     else if (item.status === 'error')   msgHtml = `<div class="qi-msg error">${esc(item.result)}</div>`;
+
+    const removeTitle = item.status === 'downloading' ? 'Cancel' : 'Remove';
 
     return `<div class="queue-item" id="qi-${item.id}">
       <div class="qi-dot ${item.status}"></div>
       <div class="qi-info">
         <div class="qi-platform">${esc(platform)}</div>
         <div class="qi-url">${esc(short)}</div>
+        ${metaHtml}
         ${msgHtml}
       </div>
-      ${canRemove ? `<button class="qi-remove" onclick="removeItem(${item.id})" title="Remove">×</button>` : ''}
+      <button class="qi-remove" onclick="removeItem(${item.id})" title="${removeTitle}">×</button>
     </div>`;
   }).join('');
 
   updateBtn();
+}
+
+function fmtDuration(sec) {
+  if (sec == null) return null;
+  sec = Math.round(sec);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const mm = h ? String(m).padStart(2, '0') : String(m);
+  const ss = String(s).padStart(2, '0');
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 function updateBtn() {
@@ -311,6 +383,21 @@ function updateBtn() {
   }
 }
 
+// Polls the job's progress until it settles into 'done' or 'error', calling
+// onProgress with each intermediate update.
+async function pollJob(key, onProgress) {
+  while (true) {
+    await new Promise(r => setTimeout(r, 1000));
+    const res = await fetch('/api/video-download?key=' + encodeURIComponent(key));
+    let data;
+    try { data = await res.json(); } catch { data = null; }
+    if (!res.ok) throw new Error(data?.error || `Server error ${res.status}`);
+    if (data.status === 'done') return data;
+    if (data.status === 'error') throw new Error(data.error || 'Download failed.');
+    onProgress(data.progress);
+  }
+}
+
 async function startDownloads() {
   if (isRunning || !selectedFmt) return;
   isRunning = true;
@@ -322,22 +409,37 @@ async function startDownloads() {
     const item = items[i];
     item.status = 'downloading';
     item.result = null;
+    item.progress = null;
     render();
 
     try {
-      const res = await fetch('/api/video-download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: item.url, format: selectedFmt })
-      });
+      const TIMEOUT_MSG = "This download took too long for the live site's hosting limit (~10-26s per request). "
+        + "Try a shorter/lower-resolution video, or run this app locally for full support.";
+
+      let res;
+      try {
+        res = await fetch('/api/video-download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: item.url, format: selectedFmt })
+        });
+      } catch {
+        // The connection can simply drop (no HTTP response at all) when the
+        // platform kills a request for running past its time limit.
+        throw new Error(TIMEOUT_MSG);
+      }
 
       if (!res.ok) {
         let msg = `Server error ${res.status}`;
         try { const j = await res.json(); msg = j.error || msg; } catch {}
+        if ([502, 503, 504, 522, 524].includes(res.status)) msg = TIMEOUT_MSG;
         throw new Error(msg);
       }
 
-      const { key, filename } = await res.json();
+      const { key } = await res.json();
+      item.key = key;
+
+      const { filename } = await pollJob(key, progress => { item.progress = progress; render(); });
 
       // Trigger native browser download — Content-Disposition:attachment keeps page open
       const params = new URLSearchParams({ k: key, fn: filename });
@@ -345,6 +447,7 @@ async function startDownloads() {
 
       item.status = 'done';
       item.result = filename;
+      item.progress = null;
       render();
 
       // Space out multiple downloads so browser can register each one
@@ -353,6 +456,7 @@ async function startDownloads() {
     } catch (e) {
       item.status = 'error';
       item.result = e.message;
+      item.progress = null;
       render();
     }
   }
