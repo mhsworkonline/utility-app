@@ -44,6 +44,7 @@ interface IosApp {
   artworkUrl60?: string;
   version?: string;
   currentVersionReleaseDate?: string;
+  releaseNotes?: string;
   trackViewUrl?: string;
   averageUserRating?: number;
   userRatingCount?: number;
@@ -61,6 +62,7 @@ interface AndroidApp {
   icon: string;
   version: string;
   updated: number;
+  recentChanges?: string;
   score?: number;
   ratings?: number;
   installs?: string;
@@ -114,7 +116,7 @@ export async function GET(req: NextRequest) {
     rating: number | null; ratingCount: number | null;
     free: boolean; price: number;
     category: string; ageRating: string; size: string;
-    description: string; installs?: string;
+    description: string; releaseNotes: string; installs?: string;
   };
 
   const appMap = new Map<string, {
@@ -140,6 +142,7 @@ export async function GET(req: NextRequest) {
         ageRating:   app.contentAdvisoryRating ?? "",
         size:        app.fileSizeBytes ? formatBytes(parseInt(app.fileSizeBytes)) : "",
         description: (app.description ?? "").slice(0, 200),
+        releaseNotes: (app.releaseNotes ?? "").slice(0, 500),
       },
     });
   }
@@ -160,6 +163,7 @@ export async function GET(req: NextRequest) {
       ageRating:   mapAndroidRating(app.contentRating ?? ""),
       size:        app.size ?? "",
       description: (app.summary ?? "").slice(0, 200),
+      releaseNotes: (app.recentChanges ?? "").slice(0, 500),
     };
     const key = normalize(app.title);
     const ex  = appMap.get(key);

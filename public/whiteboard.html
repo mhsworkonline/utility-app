@@ -161,6 +161,7 @@ const SHAPES=[['rect','▭'],['ellipse','◯'],['triangle','△'],['diamond','�
 let penColor='#1f1f1f',penWidth=4;
 let hlColor='#f6c700',hlWidth=18;
 let shapeKind='rect';
+let noteColor=NOTE_COLORS[0];
 
 const imgCache={};
 let uid=1; const nid=()=>'o'+(uid++)+'_'+Math.random().toString(36).slice(2,6);
@@ -309,8 +310,8 @@ cv.addEventListener('pointerdown',e=>{
   if(tool==='eraser'){action={type:'erase',prev:snap(),did:false};eraseAt(w.x,w.y);return;}
   if(tool==='laser'){action={type:'laser'};laserAdd(w.x,w.y);return;}
   if(tool==='shape'){action={type:'drawshape',x0:w.x,y0:w.y,live:{id:nid(),type:'shape',shape:shapeKind,x:w.x,y:w.y,w:0,h:0,color:penColor,strokeW:Math.max(3,penWidth)}};return;}
-  if(tool==='note'){const prev=snap();const o={id:nid(),type:'note',x:w.x-100,y:w.y-100,w:200,h:200,color:NOTE_COLORS[0],text:'',size:18};objects.push(o);commit(prev);selection=[o.id];setTool('pointer');render();startEdit(o.id);return;}
-  if(tool==='text'){const prev=snap();const o={id:nid(),type:'text',x:w.x,y:w.y-16,w:240,h:36,color:TC().ink,text:'',size:28};objects.push(o);commit(prev);selection=[o.id];setTool('pointer');render();startEdit(o.id);return;}
+  if(tool==='note'){const prev=snap();const o={id:nid(),type:'note',x:w.x-100,y:w.y-100,w:200,h:200,color:noteColor,text:'',size:18};objects.push(o);commit(prev);selection=[o.id];render();startEdit(o.id);return;}
+  if(tool==='text'){const prev=snap();const o={id:nid(),type:'text',x:w.x,y:w.y-16,w:240,h:36,color:TC().ink,text:'',size:28};objects.push(o);commit(prev);selection=[o.id];render();startEdit(o.id);return;}
 });
 
 cv.addEventListener('pointermove',e=>{
@@ -335,7 +336,7 @@ function endPointer(e){
   if(pinch){if(pointers.size<2)pinch=null;return;}
   if(!action)return;const a=action;action=null;
   if(a.type==='draw'){const st=a.live;if(st.pts.length){let final=st;if(inkToShape&&st.tool==='pen'){const rec=recognize(st.pts);if(rec)final=rec;}const prev=snap();objects.push(final);commit(prev);if(final!==st){selection=[final.id];updateSelToolbar();}}render();return;}
-  if(a.type==='drawshape'){const L=a.live;if(Math.abs(L.w)>4||Math.abs(L.h)>4){const prev=snap();objects.push(L);commit(prev);selection=[L.id];setTool('pointer');updateSelToolbar();}render();return;}
+  if(a.type==='drawshape'){const L=a.live;if(Math.abs(L.w)>4||Math.abs(L.h)>4){const prev=snap();objects.push(L);commit(prev);selection=[L.id];updateSelToolbar();}render();return;}
   if(a.type==='erase'){if(a.did)commit(a.prev);render();return;}
   if(a.type==='marquee'){marqueeSelect(a);render();updateSelToolbar();return;}
   if(a.type==='pan'){if(!moved&&a.clearOnUp){selection=[];updateSelToolbar();render();}return;}
@@ -495,7 +496,11 @@ function updateSelToolbar(){if(!selection.length||editingId){seltb.classList.rem
   seltb.querySelectorAll('.ib').forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==='del')deleteSelection();else if(a==='dup')duplicateSel();else if(a==='fup')fontStep(2);else if(a==='fdn')fontStep(-2);});
   seltb.classList.add('show');positionSelToolbar();
 }
-function recolor(c){const prev=snap();for(const id of selection){const o=byId(id);if(o&&o.type!=='image')o.color=c;}commit(prev);render();updateSelToolbar();}
+function recolor(c){const prev=snap();for(const id of selection){const o=byId(id);if(!o||o.type==='image')continue;o.color=c;
+    if(o.type==='shape')penColor=c;
+    else if(o.type==='stroke')o.tool==='highlighter'?hlColor=c:penColor=c;
+    else if(o.type==='note')noteColor=c;
+  }commit(prev);render();updateSelToolbar();}
 function fontStep(d){const prev=snap();for(const id of selection){const o=byId(id);if(o&&(o.type==='note'||o.type==='text'))o.size=Math.max(8,(o.size||18)+d);}commit(prev);render();}
 function positionSelToolbar(){if(!seltb.classList.contains('show'))return;const bb=selBBox();if(!bb){seltb.classList.remove('show');return;}const s=toScreen(bb.x,bb.y);let top=s.y-52,left=s.x+(bb.w*cam.scale)/2;const w=seltb.offsetWidth;left=Math.max(10,Math.min(cssW-w-10,left-w/2));if(top<10)top=s.y+bb.h*cam.scale+12;seltb.style.left=left+'px';seltb.style.top=top+'px';}
 function deleteSelection(){if(!selection.length)return;const prev=snap();objects=objects.filter(o=>!selection.includes(o.id));selection=[];commit(prev);seltb.classList.remove('show');render();}
