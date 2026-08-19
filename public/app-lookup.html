@@ -38,6 +38,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 .btn-primary{background:var(--brand);color:#fff;font-size:14px;padding:10px 20px;}
 .btn-primary:not(:disabled):hover{opacity:.88;}
 
+.search-hint{font-size:11.5px;color:var(--text-muted);line-height:1.5;margin-top:9px;}
+.search-hint em{font-style:normal;color:var(--text-mid);font-weight:600;}
+.mode-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
+.mode-option{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--text-mid);cursor:pointer;}
+.mode-option input{accent-color:var(--brand);width:13px;height:13px;cursor:pointer;margin:0;}
+
 /* History */
 .history-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:10px;margin-top:10px;border-top:1px solid var(--border);}
 .history-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-right:2px;}
@@ -174,7 +180,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
   <div class="header">
     <div class="eyebrow">Utility · Research</div>
     <div class="header-title">App Store Lookup</div>
-    <div class="header-sub">Find all iOS and Android apps published by a company.</div>
+    <div class="header-sub">Find all iOS and Android apps published by a company — or compare exact releases for multiple apps at once.</div>
   </div>
 
   <!-- Search card -->
@@ -182,9 +188,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
     <div class="input-body">
       <div class="field-label">Company or App Name</div>
       <div class="search-row">
-        <input id="search-input" class="search-input" type="text" placeholder="e.g. Meta, Spotify, Facebook…" autocomplete="off" onkeydown="if(event.key==='Enter')doSearch()"/>
+        <input id="search-input" class="search-input" type="text" placeholder="e.g. Spotify — or Instagram, WhatsApp, TikTok" autocomplete="off" onkeydown="if(event.key==='Enter')doSearch()"/>
         <button class="btn btn-primary" id="btn-search" onclick="doSearch()">Search</button>
       </div>
+      <div class="mode-row">
+        <label class="mode-option"><input type="radio" name="search-mode" value="apps"/> Apps</label>
+        <label class="mode-option"><input type="radio" name="search-mode" value="company"/> Company</label>
+        <label class="mode-option"><input type="radio" name="search-mode" value="both" checked/> Both</label>
+      </div>
+      <div class="search-hint">Separate multiple names with commas (e.g. <em>Instagram, WhatsApp, TikTok</em>) to compare exact iOS &amp; Android release details side by side. Choose <b>Apps</b> to match app names exactly, <b>Company</b> to pull a publisher's full catalog, or <b>Both</b> to search either way.</div>
       <div id="history-row" class="history-row" style="display:none;"></div>
     </div>
   </div>
@@ -298,20 +310,51 @@ function fetchFromHistory(dev){
 async function doSearch(){
   const q = document.getElementById('search-input').value.trim();
   if(!q) return;
-  const btn = document.getElementById('btn-search');
+  const mode = document.querySelector('input[name="search-mode"]:checked').value; // 'apps' | 'company' | 'both'
+  const btn  = document.getElementById('btn-search');
   btn.disabled=true; btn.textContent='Searching…';
-  document.getElementById('section-apps').style.display='none';
-  document.getElementById('section-devs').style.display='block';
-  document.getElementById('devs-body').innerHTML='<div class="spinner-wrap"><div class="spinner"></div></div>';
-  document.getElementById('devs-heading').textContent='Matching Developers';
+
+  const terms = q.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+
+  // A single term in "Both" mode keeps the original picker exactly as it was:
+  // matching developers to browse, plus direct app matches to jump straight in.
+  if(terms.length <= 1 && mode === 'both'){
+    document.getElementById('section-apps').style.display='none';
+    document.getElementById('section-devs').style.display='block';
+    document.getElementById('devs-body').innerHTML='<div class="spinner-wrap"><div class="spinner"></div></div>';
+    document.getElementById('devs-heading').textContent='Matching Developers';
+    try {
+      const res  = await fetch(`/api/app-search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error||'Search failed.');
+      lastDevResults = data.developers||[];
+      renderSearchResults(lastDevResults, data.apps||[], q);
+    } catch(e){
+      document.getElementById('devs-body').innerHTML=`<div class="state-msg error">${esc(e.message)}</div>`;
+    }
+    btn.disabled=false; btn.textContent='Search';
+    return;
+  }
+
+  // Everything else — an explicit Apps/Company mode, or multiple comma-separated
+  // names — reuses the exact same app-list view (rows, tabs, sort, expand-for-
+  // detail) as the single-developer flow, just fed by the unified lookup.
+  document.getElementById('section-devs').style.display='none';
+  document.getElementById('section-apps').style.display='block';
+  document.getElementById('apps-heading').textContent = terms.length > 1 ? `Comparing ${terms.length} names` : q;
+  document.getElementById('apps-body').innerHTML='<div class="spinner-wrap"><div class="spinner"></div></div>';
+  activeTab='all'; sortBy='date';
+  ['all','ios','android'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('active',id==='all'));
+  const ss=document.getElementById('sort-select'); ss.value='date'; ss.style.display='';
   try {
-    const res  = await fetch(`/api/app-search?q=${encodeURIComponent(q)}`);
+    const res  = await fetch(`/api/app-multi?q=${encodeURIComponent(q)}&mode=${mode}`);
     const data = await res.json();
     if(!res.ok) throw new Error(data.error||'Search failed.');
-    lastDevResults = data.developers||[];
-    renderSearchResults(lastDevResults, data.apps||[], q);
+    currentApps = data.apps||[];
+    updateTabCounts();
+    renderAppRows();
   } catch(e){
-    document.getElementById('devs-body').innerHTML=`<div class="state-msg error">${esc(e.message)}</div>`;
+    document.getElementById('apps-body').innerHTML=`<div class="state-msg error">${esc(e.message)}</div>`;
   }
   btn.disabled=false; btn.textContent='Search';
 }
@@ -440,9 +483,15 @@ function platformDetailHtml(data, platform){
   const ratingHtml = data.rating
     ? `<span class="dt-star">★ ${data.rating.toFixed(1)}</span>${data.ratingCount ? ` <span style="color:var(--text-muted)">(${fmtNum(data.ratingCount)} ratings)</span>` : ''}`
     : '—';
+  // Apple's public API has never exposed download counts, unlike Google Play —
+  // show that explicitly rather than silently omitting the row (which reads
+  // as a bug rather than a genuine platform data-availability gap).
+  const installsHtml = platform==='Android'
+    ? (data.installs ? esc(data.installs) : '—')
+    : `<span style="color:var(--text-muted);font-style:italic;">Not published by Apple</span>`;
   const rows = [
     ['Rating', ratingHtml],
-    ...(platform==='Android' && data.installs ? [['Installs', esc(data.installs)]] : []),
+    ['Installs', installsHtml],
     ['Version', esc(data.version||'—')],
     ['Updated', esc(fmtDate(data.releaseDate))],
     ...(data.size ? [['Size', esc(data.size)]] : []),

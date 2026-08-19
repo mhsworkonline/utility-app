@@ -25,6 +25,19 @@ function formatBytes(bytes: number): string {
   return `${Math.round(bytes / 1e3)} KB`;
 }
 
+// google-play-scraper returns summary/recentChanges as raw HTML fragments
+// (entity-encoded text plus <br> tags) — decode before display so the UI
+// doesn't re-escape them into literal "&amp;" / "&lt;br&gt;".
+function decodeAndroidHtml(s: string): string {
+  return s
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'");
+}
+
 // Map ESRB labels → IARC age numbers (what Play Store actually displays)
 function mapAndroidRating(rating: string): string {
   switch (rating?.trim()) {
@@ -162,8 +175,8 @@ export async function GET(req: NextRequest) {
       category:    app.genre ?? "",
       ageRating:   mapAndroidRating(app.contentRating ?? ""),
       size:        app.size ?? "",
-      description: (app.summary ?? "").slice(0, 200),
-      releaseNotes: (app.recentChanges ?? "").slice(0, 500),
+      description: decodeAndroidHtml(app.summary ?? "").slice(0, 200),
+      releaseNotes: decodeAndroidHtml(app.recentChanges ?? "").slice(0, 500),
     };
     const key = normalize(app.title);
     const ex  = appMap.get(key);
