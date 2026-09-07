@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { YT_DLP_BIN } from "@/lib/ytdlp";
+import { currentYtDlpBin, looksLikeOutdatedYtDlp, updateYtDlp } from "@/lib/ytdlp";
 
 const execFileAsync = promisify(execFile);
 
@@ -75,12 +75,26 @@ export async function POST(req: NextRequest) {
   try { const p = new URL(url ?? ""); if (!["http:", "https:"].includes(p.protocol)) throw new Error(); }
   catch { return NextResponse.json({ error: "Invalid URL." }, { status: 400 }); }
 
+  const dumpJson = () => execFileAsync(
+    currentYtDlpBin(),
+    ["--dump-json", "--no-playlist", "--no-download", url!],
+    { maxBuffer: 20 * 1024 * 1024, timeout: 30000 }
+  );
+
   try {
-    const { stdout } = await execFileAsync(
-      YT_DLP_BIN,
-      ["--dump-json", "--no-playlist", "--no-download", url!],
-      { maxBuffer: 20 * 1024 * 1024, timeout: 30000 }
-    );
+    let stdout: string;
+    try {
+      ({ stdout } = await dumpJson());
+    } catch (err) {
+      // Same self-heal as the download route: a stale yt-dlp can fail to even
+      // list formats once YouTube rotates its player. Update once and retry.
+      if (looksLikeOutdatedYtDlp((err as { stderr?: string }).stderr ?? "")) {
+        await updateYtDlp();
+        ({ stdout } = await dumpJson());
+      } else {
+        throw err;
+      }
+    }
 
     const info: YtInfo = JSON.parse(stdout);
     const formats = info.formats ?? [];

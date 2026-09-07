@@ -4,7 +4,7 @@ import { existsSync, readdirSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { randomUUID } from "crypto";
-import { YT_DLP_BIN, FFMPEG_BIN } from "@/lib/ytdlp";
+import { FFMPEG_BIN, currentYtDlpBin, looksLikeOutdatedYtDlp, updateYtDlp } from "@/lib/ytdlp";
 import { getVideoSettings } from "@/lib/video-settings";
 
 const FORMAT_MAP: Record<string, string> = {
@@ -190,7 +190,7 @@ function parseProgress(line: string): Partial<Progress> | null {
 }
 
 function runYtDlp(args: string[], onProgress: (p: Partial<Progress>) => void): { proc: ChildProcess; done: Promise<void> } {
-  const proc = spawn(YT_DLP_BIN, args, { stdio: ["ignore", "pipe", "pipe"] });
+  const proc = spawn(currentYtDlpBin(), args, { stdio: ["ignore", "pipe", "pipe"] });
   let stderr = "";
   let stdoutBuf = "";
 
@@ -234,8 +234,15 @@ async function runJob(key: string, url: string, format: string) {
   const buildArgs = (withCookies: string[]) => [...formatArgs, ...withCookies, ...trailingArgs];
 
   const cookies = await cookieArgs(url);
+  const isYoutube = hostMatches(url, YOUTUBE_HOSTS);
 
   const onProgress = (p: Partial<Progress>) => { job.progress = { ...job.progress, ...p }; };
+
+  const attempt = async (args: string[]) => {
+    const { proc, done } = runYtDlp(args, onProgress);
+    job.proc = proc;
+    await done;
+  };
 
   let timedOut = false;
   const timer = setTimeout(() => {
@@ -245,16 +252,20 @@ async function runJob(key: string, url: string, format: string) {
 
   try {
     try {
-      const { proc, done } = runYtDlp(buildArgs(cookies), onProgress);
-      job.proc = proc;
-      await done;
+      await attempt(buildArgs(cookies));
     } catch (err) {
       // Stale cookies can make a download fail when it would've worked with
       // none at all — retry once cookie-free before surfacing an error.
       if (cookies.length && hasStaleCookies(err)) {
-        const { proc, done } = runYtDlp(buildArgs([]), onProgress);
-        job.proc = proc;
-        await done;
+        await attempt(buildArgs([]));
+      }
+      // YouTube rotates its player/cipher often enough that a yt-dlp binary
+      // even a few weeks old starts getting blocked on format URLs it can
+      // still list but not fetch. Self-heal instead of failing outright: grab
+      // the latest release and retry once before giving up.
+      else if (isYoutube && looksLikeOutdatedYtDlp((err as { stderr?: string }).stderr ?? "")) {
+        await updateYtDlp();
+        await attempt(buildArgs(cookies));
       } else {
         throw err;
       }
