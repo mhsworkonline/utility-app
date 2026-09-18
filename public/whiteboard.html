@@ -290,7 +290,14 @@ const pointers=new Map();
 let action=null,pinch=null,moved=false,tempHand=false;
 
 cv.addEventListener('pointerdown',e=>{
-  if(e.target!==cv)return;cv.setPointerCapture(e.pointerId);
+  if(e.target!==cv)return;
+  // Without this, a left-click's default action (shift focus to <body>, since
+  // canvas isn't focusable) runs right after this handler and immediately
+  // blurs the editor textarea that note/text tools focus() below — which
+  // fires the editor's 'blur' listener, commits an empty value, and deletes
+  // the object before the user can type a single character.
+  if(e.button===0)e.preventDefault();
+  cv.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   hideAllPops();
   if(pointers.size===2){beginPinch();action=null;return;}
@@ -419,7 +426,17 @@ function commitEditor(){if(!editingId)return;const o=byId(editingId),prev=snap()
 // ── tools ──
 const THEME_SUN='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>';
 const THEME_MOON='<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z"/></svg>';
-function setTool(t){tool=t;cv.className=t==='hand'?'hand':t;document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));}
+function setTool(t){
+  tool=t;
+  // A selected object (e.g. a just-pasted image) leaves its floating
+  // selection toolbar/handles on screen. Switching to a drawing tool without
+  // clearing that selection leaves the toolbar sitting on top of the canvas,
+  // silently eating the first click(s) a user makes near/on that object —
+  // e.g. starting to drag out a shape right where the image was pasted.
+  if(t!=='pointer'&&t!=='hand'&&selection.length){selection=[];updateSelToolbar();render();}
+  cv.className=t==='hand'?'hand':t;
+  document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
+}
 document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('click',e=>{const t=b.dataset.tool;const same=tool===t;setTool(t);if(b.dataset.fly){const fly=b.dataset.fly;hideAllPops();if(same||true)openFly(fly,b);}else hideAllPops();}));
 document.getElementById('undoBtn').onclick=undo;
 document.getElementById('redoBtn').onclick=redo;

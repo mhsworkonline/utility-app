@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PDF Merger</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F5F4F0;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F7F4;
+  --border:#E2E1DC;
+  --text-dark:#18181A;
+  --text-mid:#4A4A50;
+  --text-muted:#8A8A92;
+  --brand:#4573D9;
+  --brand-light:#EEF2FB;
+  --success:#16A34A;
+  --error:#DC2626;
+  --error-bg:#FEF2F2;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.06);
+  --radius:16px;
+  --radius-sm:8px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem 4rem;}
+.page{max-width:640px;margin:0 auto;}
+
+/* Header */
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-muted);text-decoration:none;letter-spacing:.03em;margin-bottom:14px;}
+.back-link:hover{color:var(--brand);}
+.header{margin-bottom:1.5rem;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.header-title{font-size:22px;font-weight:600;color:var(--text-dark);letter-spacing:-.01em;margin-bottom:4px;}
+.header-sub{font-size:14px;color:var(--text-muted);line-height:1.5;}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-card);margin-bottom:1rem;overflow:hidden;}
+
+/* Upload */
+.upload-body{padding:1.25rem;}
+.upload-card{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:2.25rem 1.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
+.upload-card:hover,.upload-card.drag-over{border-color:var(--brand);background:var(--brand-light);}
+.upload-icon{font-size:32px;margin-bottom:10px;opacity:.4;}
+.upload-title{font-size:14px;font-weight:600;color:var(--text-dark);margin-bottom:3px;}
+.upload-sub{font-size:12px;color:var(--text-muted);}
+#file-input{display:none;}
+.upload-error{font-size:12px;color:var(--error);margin-top:10px;display:none;}
+
+/* Queue */
+.queue-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem 0;}
+.queue-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);}
+.btn-link{background:none;border:none;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;padding:0;}
+.btn-link:hover{color:var(--error);}
+.queue-hint{font-size:12px;color:var(--text-muted);padding:.6rem 1.25rem 0;}
+.queue-list{padding:.5rem 0;}
+.queue-item{display:flex;align-items:center;gap:10px;padding:9px 1.25rem;transition:background .1s;}
+.queue-item:hover{background:var(--surface-alt);}
+.qi-order{width:20px;height:20px;border-radius:50%;background:var(--surface-alt);border:1px solid var(--border);color:var(--text-muted);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qi-icon{font-size:20px;flex-shrink:0;width:22px;text-align:center;}
+.qi-info{flex:1;min-width:0;}
+.qi-title{font-size:13px;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qi-sub{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.qi-sub.error{color:var(--error);}
+.qi-reorder{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+.qi-move{background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text-mid);font-size:11px;width:26px;height:19px;display:flex;align-items:center;justify-content:center;line-height:1;font-family:var(--font);padding:0;}
+.qi-move:hover:not(:disabled){border-color:var(--brand);color:var(--brand);background:var(--brand-light);}
+.qi-move:disabled{opacity:.3;cursor:not-allowed;}
+.qi-remove{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:2px 6px;border-radius:4px;flex-shrink:0;line-height:1;font-family:var(--font);}
+.qi-remove:hover{background:var(--surface-alt);color:var(--error);}
+.divider{height:1px;background:var(--border);margin:.25rem 0;}
+
+/* Output */
+.output-section{padding:1rem 1.25rem;}
+.field-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;}
+.output-name{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-alt);font-family:var(--font);font-size:14px;color:var(--text-dark);outline:none;transition:border-color .15s;}
+.output-name:focus{border-color:var(--brand);}
+.btn-merge{width:100%;font-size:15px;padding:13px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-weight:600;cursor:pointer;transition:opacity .15s;margin-top:12px;}
+.btn-merge:disabled{opacity:.4;cursor:not-allowed;}
+.btn-merge:not(:disabled):hover{opacity:.88;}
+.merge-status{font-size:12px;margin-top:9px;text-align:center;}
+.merge-status.error{color:var(--error);}
+.merge-status.done{color:var(--success);}
+.legal{font-size:11px;color:var(--text-muted);padding:.75rem 1.25rem 1rem;border-top:1px solid var(--border);}
+
+/* Responsive */
+@media(max-width:480px){
+  body{padding:1.25rem .75rem 3rem;}
+  .upload-body,.output-section{padding-left:1rem;padding-right:1rem;}
+  .queue-header,.queue-hint{padding-left:1rem;padding-right:1rem;}
+  .queue-item{padding:9px 1rem;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <a class="back-link" href="/">← Back to apps</a>
+    <div class="eyebrow">Utility · Documents</div>
+    <div class="header-title">PDF Merger</div>
+    <div class="header-sub">Combine multiple PDFs into one file. Reorder them to control which comes before which — every file always starts on its own page. Runs entirely in your browser, nothing is uploaded.</div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="upload-body">
+      <div class="upload-card" id="upload-zone">
+        <input type="file" id="file-input" multiple accept="application/pdf,.pdf"/>
+        <div class="upload-icon">📄</div>
+        <div class="upload-title">Drop PDFs here</div>
+        <div class="upload-sub">or click to browse — you can select multiple files</div>
+      </div>
+      <div class="upload-error" id="upload-error"></div>
+    </div>
+  </div>
+
+  <!-- Queue + output (shown when queue is non-empty) -->
+  <div class="card" id="queue-section" style="display:none">
+    <div class="queue-header">
+      <span class="queue-title" id="queue-label">0 files added</span>
+      <button class="btn-link" onclick="clearQueue()">Clear all</button>
+    </div>
+    <div class="queue-hint">Use ▲▼ to set the merge order — files are combined top to bottom.</div>
+    <div class="queue-list" id="queue-list"></div>
+    <div class="divider"></div>
+    <div class="output-section">
+      <div class="field-label">Output File Name</div>
+      <input class="output-name" id="output-name" type="text" placeholder="merged" maxlength="80"/>
+      <button class="btn-merge" id="btn-merge" disabled onclick="mergeAndDownload()">Add at least 2 PDFs to merge</button>
+      <div class="merge-status" id="merge-status"></div>
+    </div>
+    <div class="legal">Merging happens locally in your browser. Nothing you upload leaves your device.</div>
+  </div>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Lazy CDN loading — mirrors pdf-converter.html's ensureLib() pattern: load
+// once, reuse on every subsequent call, so the page stays light until the
+// feature is actually used.
+// ---------------------------------------------------------------------------
+const LIBS = {
+  pdfLib: { test: () => window.PDFLib, src: 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js' },
+};
+const libPromises = {};
+function ensureLib(name) {
+  if (libPromises[name]) return libPromises[name];
+  const lib = LIBS[name];
+  libPromises[name] = new Promise((resolve, reject) => {
+    if (lib.test()) return resolve();
+    const s = document.createElement('script');
+    s.src = lib.src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load ${name} from CDN.`));
+    document.head.appendChild(s);
+  });
+  return libPromises[name];
+}
+
+let queue = [];   // { id, file, name, size, pages:null|number, status:'reading'|'ready'|'error', error }
+let idSeq = 0;
+let merging = false;
+
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+
+function setUploadError(msg) {
+  const e = document.getElementById('upload-error');
+  if (msg) { e.textContent = msg; e.style.display = 'block'; }
+  else { e.style.display = 'none'; }
+}
+
+function addFiles(fileList) {
+  setUploadError(null);
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+
+  const rejected = [];
+  for (const file of files) {
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (!isPdf) { rejected.push(file.name); continue; }
+    const item = { id: ++idSeq, file, name: file.name, size: file.size, pages: null, status: 'reading', error: null };
+    queue.push(item);
+    readPageCount(item);
+  }
+  if (rejected.length) setUploadError(`Skipped non-PDF file${rejected.length > 1 ? 's' : ''}: ${rejected.join(', ')}`);
+
+  render();
+}
+
+async function readPageCount(item) {
+  try {
+    await ensureLib('pdfLib');
+    const buf = await item.file.arrayBuffer();
+    const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+    item.pages = doc.getPageCount();
+    item.status = 'ready';
+  } catch {
+    item.status = 'error';
+    item.error = 'Could not read this PDF — it may be corrupted or password-protected.';
+  }
+  render();
+}
+
+function removeItem(id) {
+  queue = queue.filter(q => q.id !== id);
+  render();
+}
+
+function clearQueue() {
+  if (merging) return;
+  queue = [];
+  setUploadError(null);
+  render();
+}
+
+function moveItem(id, dir) {
+  const i = queue.findIndex(q => q.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= queue.length) return;
+  [queue[i], queue[j]] = [queue[j], queue[i]];
+  render();
+}
+
+function fmtSize(bytes) {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function render() {
+  const section = document.getElementById('queue-section');
+  const list = document.getElementById('queue-list');
+  const label = document.getElementById('queue-label');
+
+  section.style.display = queue.length ? 'block' : 'none';
+  if (!queue.length) return;
+
+  const totalPages = queue.reduce((sum, q) => sum + (q.pages || 0), 0);
+  const pagesNote = totalPages ? ` · ${totalPages} page${totalPages === 1 ? '' : 's'} total` : '';
+  label.textContent = `${queue.length} file${queue.length === 1 ? '' : 's'} added${pagesNote}`;
+
+  list.innerHTML = queue.map((item, i) => {
+    let subHtml;
+    if (item.status === 'reading') subHtml = `<div class="qi-sub">Reading…</div>`;
+    else if (item.status === 'error') subHtml = `<div class="qi-sub error">${esc(item.error)}</div>`;
+    else subHtml = `<div class="qi-sub">${fmtSize(item.size)} · ${item.pages} page${item.pages === 1 ? '' : 's'}</div>`;
+
+    return `<div class="queue-item">
+      <div class="qi-order">${i + 1}</div>
+      <div class="qi-icon">📄</div>
+      <div class="qi-info">
+        <div class="qi-title">${esc(item.name)}</div>
+        ${subHtml}
+      </div>
+      <div class="qi-reorder">
+        <button class="qi-move" onclick="moveItem(${item.id},-1)" ${i === 0 ? 'disabled' : ''} title="Move up">▲</button>
+        <button class="qi-move" onclick="moveItem(${item.id},1)" ${i === queue.length - 1 ? 'disabled' : ''} title="Move down">▼</button>
+      </div>
+      <button class="qi-remove" onclick="removeItem(${item.id})" title="Remove">×</button>
+    </div>`;
+  }).join('');
+
+  updateBtn();
+}
+
+function updateBtn() {
+  const btn = document.getElementById('btn-merge');
+  const readyCount = queue.filter(q => q.status === 'ready').length;
+  const stillReading = queue.some(q => q.status === 'reading');
+
+  if (merging) {
+    btn.disabled = true;
+    btn.textContent = 'Merging…';
+  } else if (stillReading) {
+    btn.disabled = true;
+    btn.textContent = 'Reading files…';
+  } else if (readyCount < 2) {
+    btn.disabled = true;
+    btn.textContent = 'Add at least 2 PDFs to merge';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `Merge ${readyCount} PDFs & Download`;
+  }
+}
+
+function setMergeStatus(msg, cls) {
+  const el = document.getElementById('merge-status');
+  el.textContent = msg || '';
+  el.className = 'merge-status' + (cls ? ` ${cls}` : '');
+}
+
+async function mergeAndDownload() {
+  const ready = queue.filter(q => q.status === 'ready');
+  if (merging || ready.length < 2) return;
+
+  merging = true;
+  setMergeStatus('');
+  updateBtn();
+
+  try {
+    await ensureLib('pdfLib');
+    const merged = await PDFLib.PDFDocument.create();
+
+    for (const item of ready) {
+      const buf = await item.file.arrayBuffer();
+      const src = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+      const copiedPages = await merged.copyPages(src, src.getPageIndices());
+      copiedPages.forEach(p => merged.addPage(p));
+    }
+
+    const bytes = await merged.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+
+    const rawName = document.getElementById('output-name').value.trim() || 'merged';
+    const safeName = rawName.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim() || 'merged';
+    const filename = safeName.toLowerCase().endsWith('.pdf') ? safeName : `${safeName}.pdf`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    setMergeStatus(`✓ Downloaded ${filename}`, 'done');
+  } catch (e) {
+    setMergeStatus(e.message || 'Merge failed. Please try again.', 'error');
+  }
+
+  merging = false;
+  updateBtn();
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
