@@ -1,4 +1,5 @@
 import AppGrid from "@/components/AppGrid";
+import ThemeToggle from "@/components/ThemeToggle";
 import { getApps } from "@/data/apps";
 
 // Catalog is managed from /admin, so render at request time.
@@ -10,11 +11,14 @@ export default async function Home() {
     <main className="flex-1 bg-surface">
       {/* Hero */}
       <div className="border-b border-surface-border bg-surface px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-2xl font-semibold text-ink">Utility App</h1>
-          <p className="mt-1 text-base text-ink-muted">
-            A collection of tools built to get things done.
-          </p>
+        <div className="mx-auto flex max-w-6xl items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-ink">Utility App</h1>
+            <p className="mt-1 text-base text-ink-muted">
+              A collection of tools built to get things done.
+            </p>
+          </div>
+          <ThemeToggle />
         </div>
       </div>
 

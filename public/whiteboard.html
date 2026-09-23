@@ -17,6 +17,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',system-u
 #board.hand.grabbing,#board.panning{cursor:grabbing}
 
 .panel{background:var(--panel);color:var(--ink);box-shadow:var(--sh-s)}
+.theme-toggle{display:flex;gap:2px;background:var(--panel);border-radius:10px;box-shadow:var(--sh-s);padding:4px;flex-shrink:0}
+.theme-toggle .tt-btn{width:30px;height:30px;border:none;background:transparent;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);padding:0}
+.theme-toggle .tt-btn:hover{background:var(--hover);color:var(--ink)}
+.theme-toggle .tt-btn.active{background:var(--abg);color:var(--afg)}
+.theme-toggle .tt-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #home{position:fixed;top:16px;left:16px;z-index:100;display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:10px;box-shadow:var(--sh-s);padding:9px 12px;color:var(--ink);text-decoration:none;font-size:13px;font-weight:600;transition:background .15s}
 #home:hover{background:var(--hover)}
 #home svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -94,9 +99,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',system-u
 </a>
 
 <div id="topright">
-  <div class="cluster">
-    <button id="themeBtn" title="Toggle theme"></button>
-  </div>
+  <div class="theme-toggle" id="theme-toggle"></div>
   <div class="cluster">
     <button id="fitBtn" title="Fit to content"><svg viewBox="0 0 24 24"><path d="M8 3H4v4M16 3h4v4M8 21H4v-4M16 21h4v-4"/></svg></button>
     <button id="zout" title="Zoom out">&minus;</button>
@@ -142,7 +145,7 @@ const THEME={
   light:{bg:'#ffffff',dot:'rgba(0,0,0,0.11)',grid:'rgba(0,0,0,0.07)',ink:'#1f1f1f'},
   dark:{bg:'#1b1b1d',dot:'rgba(255,255,255,0.09)',grid:'rgba(255,255,255,0.06)',ink:'#f0f0f0'}
 };
-let theme='light',bgStyle='dots';
+let theme='light',themePref='system',bgStyle='dots';
 const TC=()=>THEME[theme];
 
 let objects=[];
@@ -182,7 +185,12 @@ function redo(){if(!future.length)return;past.push(snap());objects=JSON.parse(fu
 function fixSel(){const ids=new Set(objects.map(o=>o.id));selection=selection.filter(i=>ids.has(i));}
 let saveT=null;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem('whiteboard_v2',JSON.stringify({objects,cam,theme,bgStyle,inkToShape}));}catch(e){}},250);}
-async function load(){try{const d=JSON.parse(localStorage.getItem('whiteboard_v2'));if(d){objects=d.objects||[];cam=d.cam||cam;theme=d.theme||'light';bgStyle=d.bgStyle||'dots';inkToShape=d.inkToShape!==false;let m=0;objects.forEach(o=>{const n=parseInt((o.id||'').replace(/\D/g,''));if(n>m)m=n;});uid=m+1;}}catch(e){}}
+async function load(){try{const d=JSON.parse(localStorage.getItem('whiteboard_v2'));if(d){objects=d.objects||[];cam=d.cam||cam;bgStyle=d.bgStyle||'dots';inkToShape=d.inkToShape!==false;let m=0;objects.forEach(o=>{const n=parseInt((o.id||'').replace(/\D/g,''));if(n>m)m=n;});uid=m+1;}
+  // Preference lives in the same 'ua_theme' key every other page uses, so it's
+  // consistent across the whole app. Fall back to this board's own legacy
+  // light/dark-only field for anyone who set a preference before 'system' existed.
+  try{themePref=localStorage.getItem('ua_theme')||(d&&d.theme)||'system';}catch(e){themePref='system';}
+}catch(e){}}
 async function ensureImgs(){for(const o of objects){if(o.type==='image'&&!imgCache[o.key]){const url=await idbGet(o.key);if(url){const im=new Image();im.onload=render;im.src=url;imgCache[o.key]=im;}}}}
 
 const toScreen=(x,y)=>({x:x*cam.scale+cam.x,y:y*cam.scale+cam.y});
@@ -426,6 +434,19 @@ function commitEditor(){if(!editingId)return;const o=byId(editingId),prev=snap()
 // ── tools ──
 const THEME_SUN='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>';
 const THEME_MOON='<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z"/></svg>';
+const THEME_SYSTEM='<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
+const THEME_ICONS={light:THEME_SUN,dark:THEME_MOON,system:THEME_SYSTEM};
+const THEME_LABELS={light:'Light',dark:'Dark',system:'System'};
+function resolveTheme(pref){return pref==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):pref;}
+function buildThemeToggle(){
+  const el=document.getElementById('theme-toggle');
+  el.innerHTML=['light','dark','system'].map(k=>`<button type="button" class="tt-btn" data-mode="${k}" title="${THEME_LABELS[k]} mode" aria-label="${THEME_LABELS[k]} mode">${THEME_ICONS[k]}</button>`).join('');
+  el.querySelectorAll('.tt-btn').forEach(b=>b.onclick=()=>setThemePref(b.dataset.mode));
+}
+function paintThemeToggle(){document.querySelectorAll('#theme-toggle .tt-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===themePref));}
+function applyTheme(){theme=resolveTheme(themePref);document.body.dataset.theme=theme;paintThemeToggle();render();}
+function setThemePref(p){themePref=p;try{localStorage.setItem('ua_theme',p);}catch(e){}applyTheme();save();}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(themePref==='system')applyTheme();});
 function setTool(t){
   tool=t;
   // A selected object (e.g. a just-pasted image) leaves its floating
@@ -440,7 +461,7 @@ function setTool(t){
 document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('click',e=>{const t=b.dataset.tool;const same=tool===t;setTool(t);if(b.dataset.fly){const fly=b.dataset.fly;hideAllPops();if(same||true)openFly(fly,b);}else hideAllPops();}));
 document.getElementById('undoBtn').onclick=undo;
 document.getElementById('redoBtn').onclick=redo;
-document.getElementById('themeBtn').onclick=toggleTheme;
+buildThemeToggle();
 document.getElementById('imgBtn').onclick=()=>fileInput.click();
 
 // ── popups ──
@@ -470,14 +491,14 @@ document.getElementById('moreBtn').onclick=e=>{const el=document.getElementById(
    <div class="mitem" data-a="pdf"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Export PDF</div>
    <div class="msep"></div>
    <div class="mitem" data-a="bg"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><circle cx="16" cy="8" r="1"/><circle cx="8" cy="16" r="1"/><circle cx="16" cy="16" r="1"/></svg>Background: ${bg[bgStyle]}</div>
-   <div class="mitem" data-a="theme"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/></svg>Theme: ${theme==='light'?'Light':'Dark'}</div>
+   <div class="mitem" data-a="theme"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/></svg>Theme: ${THEME_LABELS[themePref]}</div>
    <div class="msep"></div>
    <div class="mitem" data-a="clear" style="color:#d13438"><svg viewBox="0 0 24 24" stroke="#d13438"><path d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14"/></svg>Clear board</div>`;
   el.querySelectorAll('.mitem').forEach(m=>m.onclick=()=>{moreAction(m.dataset.a);});
   const r=e.currentTarget.getBoundingClientRect();hideAllPops();el.classList.add('show');el.style.left=Math.min(cssW-el.offsetWidth-8,r.left)+'px';el.style.top=(r.top-el.offsetHeight-8)+'px';el.style.left=Math.max(8,r.right-el.offsetWidth)+'px';};
 function moreAction(a){hideAllPops();if(a==='png')exportPNG();else if(a==='pdf')exportPDF();else if(a==='bg')cycleBg();else if(a==='theme')toggleTheme();else if(a==='clear'){if(confirm('Clear the entire board?')){const prev=snap();objects=[];selection=[];commit(prev);render();}}}
 function cycleBg(){const o=['dots','grid','lines','blank'];bgStyle=o[(o.indexOf(bgStyle)+1)%o.length];render();save();}
-function toggleTheme(){theme=theme==='light'?'dark':'light';document.body.dataset.theme=theme;document.getElementById('themeBtn').innerHTML=theme==='light'?THEME_MOON:THEME_SUN;render();save();}
+function toggleTheme(){setThemePref(themePref==='light'?'dark':themePref==='dark'?'system':'light');}
 
 // ── context menu ──
 function openCtx(x,y){const el=document.getElementById('ctx');const oneStroke=selection.length===1&&byId(selection[0])?.type==='stroke';
@@ -579,7 +600,7 @@ addEventListener('keyup',e=>{if(e.code==='Space'&&tempHand){tempHand=false;cv.cl
 addEventListener('pointerdown',e=>{if(!e.target.closest('#toolbar')&&!e.target.closest('.pop')&&!e.target.closest('#topright')&&!e.target.closest('#seltb'))hideAllPops();},true);
 
 // ── init ──
-(async function(){await openDB();await load();document.body.dataset.theme=theme;document.getElementById('themeBtn').innerHTML=theme==='light'?THEME_MOON:THEME_SUN;await ensureImgs();setTool('pointer');zlabel();resize();render();})();
+(async function(){await openDB();await load();applyTheme();await ensureImgs();setTool('pointer');zlabel();resize();render();})();
 </script>
 </body>
 </html>

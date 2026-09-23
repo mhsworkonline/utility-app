@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lab Report Analysis</title>
+<script>(function(){try{var p=localStorage.getItem('ua_theme')||'system';var m=p==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;document.documentElement.setAttribute('data-theme-mode',m);document.documentElement.setAttribute('data-theme-pref',p);}catch(e){}})();</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -28,6 +29,31 @@
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   --shadow-card:0 1px 4px rgba(0,0,0,0.06);
 }
+:root[data-theme-mode="dark"]{
+  --bg:#18181B;
+  --surface:#212226;
+  --surface-alt:#28292E;
+  --border:#35363D;
+  --text-dark:#F2F2F3;
+  --text-mid:#C7C8CC;
+  --text-muted:#9A9AA2;
+  --brand:#6E93E8;
+  --brand-light:#1E2A44;
+  --normal:#22C55E;
+  --normal-bg:#0F2A1B;
+  --normal-border:#1E4A2E;
+  --high:#F87171;
+  --high-bg:#3A1418;
+  --high-border:#5C2226;
+  --low:#FBBF24;
+  --low-bg:#3A2E12;
+  --low-border:#5C471C;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.3);
+}
+.theme-toggle{display:flex;gap:2px;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px;flex-shrink:0;}
+.theme-toggle .tt-btn{width:26px;height:26px;border:none;background:transparent;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background .15s,color .15s;padding:0;}
+.theme-toggle .tt-btn:hover{color:var(--text-dark);}
+.theme-toggle .tt-btn.active{background:var(--brand);color:#fff;}
 body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem;}
 .page{max-width:900px;margin:0 auto;}
 
@@ -160,10 +186,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit
 </head>
 <body>
 <div class="page">
-  <a href="/" class="back-link">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
-    Home
-  </a>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+    <a href="/" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+      Home
+    </a>
+    <div class="theme-toggle" id="theme-toggle"></div>
+  </div>
 
   <div class="header">
     <div class="header-eyebrow">AI-Powered · Upload &amp; Analyze</div>
@@ -622,5 +651,6 @@ function setLoading(v) {
 function showError(msg) { const e = document.getElementById('error-box'); e.textContent = msg; e.classList.add('show'); }
 function hideError() { document.getElementById('error-box').classList.remove('show'); }
 </script>
+<script src="/theme-toggle.js"></script>
 </body>
 </html>

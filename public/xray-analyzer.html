@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Medical Image Analyzer — Radiological Analysis</title>
+  <script>(function(){try{var p=localStorage.getItem('ua_theme')||'system';var m=p==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;document.documentElement.setAttribute('data-theme-mode',m);document.documentElement.setAttribute('data-theme-pref',p);}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -34,6 +35,31 @@
       --shadow-md:    0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.05);
       --shadow-lg:    0 10px 24px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
     }
+    :root[data-theme-mode="dark"] {
+      --bg:           #18181B;
+      --surface:      #212226;
+      --surface2:     #26272C;
+      --surface3:     #2E2F35;
+      --border:       #35363D;
+      --border2:      #45464E;
+      --accent:       #2DD4BF;
+      --accent-light: #123832;
+      --accent-dark:  #5EEAD4;
+      --warn:         #FBBF24;
+      --warn-light:   #3A2E12;
+      --danger:       #F87171;
+      --danger-light: #3A1418;
+      --text:         #F2F2F3;
+      --text-dim:     #C7C8CC;
+      --text-muted:   #9A9AA2;
+      --normal:       #2DD4BF;
+      --moderate:     #FBBF24;
+      --high:         #F87171;
+    }
+    .theme-toggle{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px;flex-shrink:0;}
+    .theme-toggle .tt-btn{width:26px;height:26px;border:none;background:transparent;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background .15s,color .15s;padding:0;}
+    .theme-toggle .tt-btn:hover{color:var(--text);}
+    .theme-toggle .tt-btn.active{background:var(--accent);color:#0F172A;}
 
     html { font-size: 15px; }
     body {
@@ -673,6 +699,7 @@
       <div class="logo-sub">X-Ray · CT Scan · MRI</div>
     </div>
     <div class="header-right">
+      <div class="theme-toggle" id="theme-toggle"></div>
       <a href="/" class="back-link">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
         Home
@@ -1415,5 +1442,6 @@ window.addEventListener('resize', () => {
   if (currentImage) { drawImage(); renderOverlay(); }
 });
 </script>
+<script src="/theme-toggle.js"></script>
 </body>
 </html>

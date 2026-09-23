@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>OTC Medicine Infographic</title>
+<script>(function(){try{var p=localStorage.getItem('ua_theme')||'system';var m=p==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;document.documentElement.setAttribute('data-theme-mode',m);document.documentElement.setAttribute('data-theme-pref',p);}catch(e){}})();</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
@@ -19,10 +20,34 @@
   --rx-text:#A41818;
   --rx-border:#EDD0CE;
   --otc-section:#EDF2FA;
+  --otc-section-border:#D8E4F2;
   --rx-section:#FDF2F1;
+  --rx-section-border:#EDD8D6;
+  --hero-bg:#18181A;
   --font-serif:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
 }
+:root[data-theme-mode="dark"]{
+  --bg:#18181B;
+  --surface:#212226;
+  --surface-alt:#28292E;
+  --border:#35363D;
+  --text-dark:#F2F2F3;
+  --text-mid:#C7C8CC;
+  --text-muted:#9A9AA2;
+  --rx-bg:#3A1418;
+  --rx-text:#F87171;
+  --rx-border:#5C2226;
+  --otc-section:#1E2A3D;
+  --otc-section-border:#2C3E56;
+  --rx-section:#3A1E22;
+  --rx-section-border:#5C2E33;
+  --hero-bg:#2A2B33;
+}
+.theme-toggle{display:flex;gap:2px;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px;flex-shrink:0;}
+.theme-toggle .tt-btn{width:26px;height:26px;border:none;background:transparent;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background .15s,color .15s;padding:0;}
+.theme-toggle .tt-btn:hover{color:var(--text-dark);}
+.theme-toggle .tt-btn.active{background:#4573D9;color:#fff;}
 
 body{
   font-family:var(--font-sans);
@@ -40,7 +65,7 @@ body{
 .hero{
   display:block;
   padding:2rem 2.5rem 2.25rem;
-  background:var(--text-dark);
+  background:var(--hero-bg);
   border-radius:16px;
   margin-bottom:2rem;
   position:relative;
@@ -123,11 +148,11 @@ body{
 
 /* ── SECTION WRAPPERS ── */
 .otc-wrap{
-  background:var(--otc-section);border:1px solid #D8E4F2;
+  background:var(--otc-section);border:1px solid var(--otc-section-border);
   border-radius:16px;padding:1.75rem;margin-bottom:1.75rem;
 }
 .rx-wrap{
-  background:var(--rx-section);border:1px solid #EDD8D6;
+  background:var(--rx-section);border:1px solid var(--rx-section-border);
   border-radius:16px;padding:1.75rem;
 }
 
@@ -213,7 +238,7 @@ body{
 /* ── RX-ONLY CARD DRUG ROW ── */
 .rxdrug-row{
   display:flex;align-items:flex-start;gap:8px;
-  border-top:1px solid #F0D8D6;padding:8px 0;
+  border-top:1px solid var(--rx-section-border);padding:8px 0;
 }
 .rxdrug-row:first-of-type{border-top:none;padding-top:4px;}
 .rx-marker{
@@ -299,10 +324,13 @@ body{
 </head>
 <body>
 <div class="page">
-  <a href="/" class="back-link">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
-    Home
-  </a>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+    <a href="/" class="back-link" style="margin-bottom:0;">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+      Home
+    </a>
+    <div class="theme-toggle" id="theme-toggle"></div>
+  </div>
 
 <!-- HERO -->
 <div class="hero">
@@ -641,7 +669,7 @@ RX_DATA.forEach((c,ci)=>{
   card.dataset.search=[c.name,...c.abx.map(m=>m[0])].join(' ').toLowerCase();
   card.appendChild(mk('div','ccard-top',`background:${acc};`));
 
-  const head=mk('div','ccard-head',`border-bottom-color:#F0D8D6;`);
+  const head=mk('div','ccard-head',`border-bottom-color:var(--rx-section-border);`);
   const nameSpan=mk('span','ccard-name',`color:${acc};`,c.name);
   head.appendChild(nameSpan);
   const countSpan=mk('span','ccard-count',null,c.abx.length+' antibiotics ℞');
@@ -731,5 +759,6 @@ searchClear.addEventListener('click', function () {
   searchInput.focus();
 });
 </script>
+<script src="/theme-toggle.js"></script>
 </body>
 </html>
