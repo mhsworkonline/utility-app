@@ -29,6 +29,7 @@ export const fallbackApps: App[] = [
   { id: "live-transcriber", name: "Live Transcriber", description: "Transcribe audio from a video playing in another tab (like YouTube), an uploaded file, or your microphone — then save the transcript as TXT, SRT, or VTT.", url: "/live-transcriber.html", icon: "mic", tags: ["Utility", "Media"] },
   { id: "pdf-converter", name: "PDF Converter", description: "Write rich text or upload TXT, Markdown, Word, and image files, then convert to a downloadable PDF — entirely in your browser.", url: "/pdf-converter.html", icon: "pdf", tags: ["Utility", "Documents"] },
   { id: "pdf-merger", name: "PDF Merger", description: "Combine multiple PDFs into one file — reorder them to control which comes before which. Each file always starts on its own page. Runs entirely in your browser.", url: "/pdf-merger.html", icon: "pdf", tags: ["Utility", "Documents"] },
+  { id: "qr-reader", name: "QR Code Reader", description: "Upload a QR code image or scan one with your camera — decoded entirely in your browser, nothing is uploaded.", url: "/qr-reader.html", icon: "qr", tags: ["Utility", "Media"] },
 ];
 
 /** Server-side catalog fetch. Hidden apps are never returned to the homepage. */

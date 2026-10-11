@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QR Code Reader</title>
+<script>(function(){try{var p=localStorage.getItem('ua_theme')||'system';var m=p==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;document.documentElement.setAttribute('data-theme-mode',m);document.documentElement.setAttribute('data-theme-pref',p);}catch(e){}})();</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F5F4F0;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F7F4;
+  --border:#E2E1DC;
+  --text-dark:#18181A;
+  --text-mid:#4A4A50;
+  --text-muted:#8A8A92;
+  --brand:#4573D9;
+  --brand-light:#EEF2FB;
+  --success:#16A34A;
+  --success-bg:#F0FDF4;
+  --error:#DC2626;
+  --error-bg:#FEF2F2;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.06);
+  --radius:16px;
+  --radius-sm:8px;
+}
+:root[data-theme-mode="dark"]{
+  --bg:#18181B;
+  --surface:#212226;
+  --surface-alt:#28292E;
+  --border:#35363D;
+  --text-dark:#F2F2F3;
+  --text-mid:#C7C8CC;
+  --text-muted:#9A9AA2;
+  --brand:#6E93E8;
+  --brand-light:#1E2A44;
+  --success:#22C55E;
+  --success-bg:#0F2A1B;
+  --error:#F87171;
+  --error-bg:#3A1418;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.3);
+}
+.theme-toggle{display:flex;gap:2px;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px;flex-shrink:0;}
+.theme-toggle .tt-btn{width:26px;height:26px;border:none;background:transparent;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background .15s,color .15s;padding:0;}
+.theme-toggle .tt-btn:hover{color:var(--text-dark);}
+.theme-toggle .tt-btn.active{background:var(--brand);color:#fff;}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem 4rem;}
+.page{max-width:560px;margin:0 auto;}
+
+/* Header */
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-muted);text-decoration:none;letter-spacing:.03em;margin-bottom:14px;}
+.back-link:hover{color:var(--brand);}
+.header{margin-bottom:1.5rem;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.header-title{font-size:22px;font-weight:600;color:var(--text-dark);letter-spacing:-.01em;margin-bottom:4px;}
+.header-sub{font-size:14px;color:var(--text-muted);line-height:1.5;}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-card);margin-bottom:1rem;overflow:hidden;}
+.scan-body{padding:1.25rem;}
+
+/* Mode tabs */
+.mode-tabs{display:flex;gap:4px;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;margin-bottom:1rem;}
+.mode-tab{flex:1;padding:9px;border:none;background:none;border-radius:6px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.mode-tab.active{background:var(--surface);color:var(--text-dark);box-shadow:var(--shadow-card);}
+
+/* Upload zone */
+.upload-card{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
+.upload-card:hover,.upload-card.drag-over{border-color:var(--brand);background:var(--brand-light);}
+.upload-icon{font-size:36px;margin-bottom:10px;opacity:.45;}
+.upload-title{font-size:14px;font-weight:600;color:var(--text-dark);margin-bottom:3px;}
+.upload-sub{font-size:12px;color:var(--text-muted);}
+#file-input{display:none;}
+
+/* Camera */
+.camera-wrap{position:relative;width:100%;aspect-ratio:1/1;border-radius:var(--radius-sm);overflow:hidden;background:#000;}
+.camera-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+.scan-frame{position:absolute;inset:12%;pointer-events:none;}
+.corner{position:absolute;width:26px;height:26px;border:3px solid #fff;opacity:.9;}
+.corner.tl{top:0;left:0;border-right:none;border-bottom:none;border-radius:6px 0 0 0;}
+.corner.tr{top:0;right:0;border-left:none;border-bottom:none;border-radius:0 6px 0 0;}
+.corner.bl{bottom:0;left:0;border-right:none;border-top:none;border-radius:0 0 0 6px;}
+.corner.br{bottom:0;right:0;border-left:none;border-top:none;border-radius:0 0 6px 0;}
+.scan-line{position:absolute;left:4%;right:4%;top:0;height:2px;background:linear-gradient(90deg,transparent,#5EEAD4,transparent);animation:scan 1.8s ease-in-out infinite;}
+@keyframes scan{0%{top:2%;}50%{top:96%;}100%{top:2%;}}
+.camera-flip{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,0.45);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.camera-status{font-size:12px;color:var(--text-muted);text-align:center;margin-top:10px;display:none;}
+.camera-status.show{display:block;}
+.camera-status .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:6px;animation:pulse 1.2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.scan-error{font-size:12px;color:var(--error);margin-top:10px;display:none;text-align:center;}
+.scan-error.show{display:block;}
+
+/* Result */
+.result-body{padding:1.25rem;}
+.field-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.result-text{font-size:14px;color:var(--text-dark);background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;word-break:break-word;white-space:pre-wrap;max-height:180px;overflow-y:auto;margin-bottom:12px;}
+.result-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-action{flex:1;min-width:120px;padding:10px 14px;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface-alt);color:var(--text-dark);text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s,border-color .15s;}
+.btn-action:hover{border-color:var(--brand);}
+.btn-action.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+.btn-action.primary:hover{opacity:.9;}
+.btn-action.copied{background:var(--success-bg);border-color:var(--success);color:var(--success);}
+.btn-action.copy-failed{background:var(--error-bg);border-color:var(--error);color:var(--error);flex-basis:100%;}
+
+/* History */
+.queue-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;}
+.queue-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);}
+.btn-link{background:none;border:none;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;padding:0;}
+.btn-link:hover{color:var(--error);}
+.history-list{padding:0 0 .5rem;}
+.history-item{display:flex;align-items:center;gap:10px;padding:8px 1.25rem;cursor:pointer;transition:background .1s;}
+.history-item:hover{background:var(--surface-alt);}
+.hi-text{flex:1;min-width:0;font-size:12.5px;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hi-time{font-size:11px;color:var(--text-muted);flex-shrink:0;}
+
+.legal{font-size:11px;color:var(--text-muted);padding:.75rem 1.25rem 1rem;border-top:1px solid var(--border);}
+
+/* Responsive */
+@media(max-width:480px){
+  body{padding:1.25rem .75rem 3rem;}
+  .scan-body,.result-body{padding:1rem;}
+  .queue-header{padding:1rem;}
+  .history-item{padding:8px 1rem;}
+  .btn-action{min-width:100px;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <a class="back-link" href="/">← Back to apps</a>
+      <div class="theme-toggle" id="theme-toggle"></div>
+    </div>
+    <div class="eyebrow">Utility · Media</div>
+    <div class="header-title">QR Code Reader</div>
+    <div class="header-sub">Upload a QR code image or scan one with your camera. Decoded entirely in your browser — nothing is uploaded.</div>
+  </div>
+
+  <!-- Scan -->
+  <div class="card">
+    <div class="scan-body">
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-upload" onclick="switchMode('upload')">📁 Upload Image</button>
+        <button class="mode-tab" id="tab-camera" onclick="switchMode('camera')">📷 Use Camera</button>
+      </div>
+
+      <!-- Upload mode -->
+      <div id="panel-upload">
+        <div class="upload-card" id="upload-zone">
+          <input type="file" id="file-input" accept="image/*"/>
+          <div class="upload-icon">🔳</div>
+          <div class="upload-title">Drop a QR code image here</div>
+          <div class="upload-sub">or click to browse — you can also paste with Ctrl+V</div>
+        </div>
+      </div>
+
+      <!-- Camera mode -->
+      <div id="panel-camera" style="display:none">
+        <div class="camera-wrap" id="camera-wrap">
+          <video id="camera-video" autoplay playsinline muted></video>
+          <div class="scan-frame">
+            <span class="corner tl"></span><span class="corner tr"></span>
+            <span class="corner bl"></span><span class="corner br"></span>
+            <div class="scan-line"></div>
+          </div>
+          <button class="camera-flip" id="camera-flip" title="Switch camera" style="display:none" onclick="flipCamera()">⟳</button>
+        </div>
+        <div class="camera-status" id="camera-status"><span class="dot"></span>Point your camera at a QR code…</div>
+      </div>
+
+      <div class="scan-error" id="scan-error"></div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="card" id="result-section" style="display:none">
+    <div class="result-body">
+      <div class="field-label">✅ Decoded Result</div>
+      <div class="result-text" id="result-text"></div>
+      <div class="result-actions">
+        <a class="btn-action primary" id="btn-open" target="_blank" rel="noopener" style="display:none">🔗 Open Link</a>
+        <button class="btn-action" id="btn-copy" onclick="copyResult()">📋 Copy</button>
+        <button class="btn-action" onclick="scanAnother()">🔄 Scan Another</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="card" id="history-section" style="display:none">
+    <div class="queue-header">
+      <span class="queue-title">Recent Scans</span>
+      <button class="btn-link" onclick="clearHistory()">Clear</button>
+    </div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <div class="legal">For personal use. QR images may contain links to external sites — review before opening.</div>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Lazy CDN loading — mirrors pdf-converter.html's ensureLib() pattern.
+// jsQR is only fetched on browsers without the native BarcodeDetector API
+// (Safari, Firefox) — most Chrome/Edge users decode without downloading
+// anything at all.
+// ---------------------------------------------------------------------------
+const LIBS = {
+  jsQR: { test: () => window.jsQR, src: 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js' },
+};
+const libPromises = {};
+function ensureLib(name) {
+  if (libPromises[name]) return libPromises[name];
+  const lib = LIBS[name];
+  libPromises[name] = new Promise((resolve, reject) => {
+    if (lib.test()) return resolve();
+    const s = document.createElement('script');
+    s.src = lib.src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load ${name} from CDN.`));
+    document.head.appendChild(s);
+  });
+  return libPromises[name];
+}
+
+// ---------------------------------------------------------------------------
+// Decoding — native BarcodeDetector first (zero download, hardware-backed on
+// many platforms), jsQR as a fallback for browsers that lack it.
+// ---------------------------------------------------------------------------
+let detector = null;
+let detectorChecked = false;
+async function getDetector() {
+  if (detectorChecked) return detector;
+  detectorChecked = true;
+  if ('BarcodeDetector' in window) {
+    try { detector = new BarcodeDetector({ formats: ['qr_code'] }); }
+    catch { detector = null; }
+  }
+  return detector;
+}
+
+const scanCanvas = document.createElement('canvas');
+const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+
+/** Decodes a QR code from an <img> or <video> source. Returns the decoded text, or null if none found. */
+async function decodeSource(source, w, h) {
+  scanCanvas.width = w;
+  scanCanvas.height = h;
+  scanCtx.drawImage(source, 0, 0, w, h);
+
+  const d = await getDetector();
+  if (d) {
+    try {
+      const codes = await d.detect(scanCanvas);
+      if (codes.length) return codes[0].rawValue;
+      return null;
+    } catch {
+      // Falls through to jsQR below if the native detector itself errors.
+    }
+  }
+
+  try {
+    await ensureLib('jsQR');
+    const imgData = scanCtx.getImageData(0, 0, w, h);
+    const code = jsQR(imgData.data, w, h);
+    return code ? code.data : null;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mode switching
+// ---------------------------------------------------------------------------
+let mode = 'upload';
+function switchMode(next) {
+  if (mode === next) return;
+  mode = next;
+  document.getElementById('tab-upload').classList.toggle('active', next === 'upload');
+  document.getElementById('tab-camera').classList.toggle('active', next === 'camera');
+  document.getElementById('panel-upload').style.display = next === 'upload' ? 'block' : 'none';
+  document.getElementById('panel-camera').style.display = next === 'camera' ? 'block' : 'none';
+  setError(null);
+  if (next === 'camera') startCamera(); else stopCamera();
+}
+
+// ---------------------------------------------------------------------------
+// Upload flow
+// ---------------------------------------------------------------------------
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/'));
+  if (file) handleImageFile(file);
+});
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (file) handleImageFile(file);
+  fileInput.value = '';
+});
+addEventListener('paste', e => {
+  if (mode !== 'upload') return;
+  const items = e.clipboardData?.items || [];
+  for (const it of items) {
+    if (it.type.indexOf('image') === 0) {
+      const f = it.getAsFile();
+      if (f) { e.preventDefault(); handleImageFile(f); return; }
+    }
+  }
+});
+
+function handleImageFile(file) {
+  setError(null);
+  const img = new Image();
+  img.onload = async () => {
+    const text = await decodeSource(img, img.naturalWidth, img.naturalHeight);
+    if (text) showResult(text);
+    else setError('No QR code found in this image. Try a clearer or higher-resolution photo.');
+    URL.revokeObjectURL(img.src);
+  };
+  img.onerror = () => setError('Could not read that file as an image.');
+  img.src = URL.createObjectURL(file);
+}
+
+// ---------------------------------------------------------------------------
+// Camera flow
+// ---------------------------------------------------------------------------
+const video = document.getElementById('camera-video');
+let stream = null;
+let scanTimer = null;
+let facingMode = 'environment';
+let hasMultipleCameras = false;
+
+navigator.mediaDevices?.enumerateDevices?.().then(devices => {
+  hasMultipleCameras = devices.filter(d => d.kind === 'videoinput').length > 1;
+}).catch(() => {});
+
+async function startCamera() {
+  setError(null);
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setError('Camera scanning isn\'t supported in this browser — try uploading an image instead.');
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+    video.srcObject = stream;
+    document.getElementById('camera-flip').style.display = hasMultipleCameras ? 'flex' : 'none';
+    setCameraStatus(true);
+    scanTimer = setInterval(scanCameraFrame, 220);
+  } catch (e) {
+    if (e.name === 'NotAllowedError') setError('Camera access was denied. Allow camera permission to scan, or upload an image instead.');
+    else if (e.name === 'NotFoundError') setError('No camera found on this device.');
+    else setError('Could not start the camera. Try uploading an image instead.');
+  }
+}
+
+function stopCamera() {
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  video.srcObject = null;
+  setCameraStatus(false);
+}
+
+async function flipCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  stopCamera();
+  await startCamera();
+}
+
+async function scanCameraFrame() {
+  if (!video.videoWidth) return;
+  const text = await decodeSource(video, video.videoWidth, video.videoHeight);
+  if (text) {
+    if (navigator.vibrate) navigator.vibrate(100);
+    stopCamera();
+    showResult(text);
+  }
+}
+
+function setCameraStatus(active) {
+  document.getElementById('camera-status').classList.toggle('show', active);
+}
+
+// Release the camera if the user navigates away or hides the tab.
+addEventListener('beforeunload', stopCamera);
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopCamera(); });
+
+// ---------------------------------------------------------------------------
+// Result + history
+// ---------------------------------------------------------------------------
+let history = []; // { text, at }
+
+function isUrl(text) {
+  try { const u = new URL(text); return u.protocol === 'http:' || u.protocol === 'https:'; }
+  catch { return false; }
+}
+
+function showResult(text) {
+  setError(null);
+  document.getElementById('result-section').style.display = 'block';
+  document.getElementById('result-text').textContent = text;
+
+  const openBtn = document.getElementById('btn-open');
+  if (isUrl(text)) { openBtn.style.display = 'flex'; openBtn.href = text; }
+  else { openBtn.style.display = 'none'; }
+
+  resetCopyBtn();
+  document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  history.unshift({ text, at: Date.now() });
+  history = history.slice(0, 8);
+  renderHistory();
+}
+
+function resetCopyBtn() {
+  const btn = document.getElementById('btn-copy');
+  btn.textContent = '📋 Copy';
+  btn.classList.remove('copied', 'copy-failed');
+}
+
+// Falls back to the legacy execCommand approach when the modern Clipboard
+// API is unavailable or denied (older browsers, non-secure contexts, or a
+// document that doesn't currently have focus) — copyResult() shows an
+// explicit failure state rather than silently doing nothing either way.
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+async function copyResult() {
+  const text = document.getElementById('result-text').textContent;
+  const btn = document.getElementById('btn-copy');
+
+  let ok = false;
+  try {
+    // navigator.clipboard.writeText() can hang indefinitely rather than
+    // reject — e.g. when the underlying permission check never resolves —
+    // so race it against a short timeout instead of trusting it to settle.
+    await Promise.race([
+      navigator.clipboard.writeText(text),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('clipboard timeout')), 1200)),
+    ]);
+    ok = true;
+  } catch {
+    ok = legacyCopy(text);
+  }
+
+  if (ok) {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+  } else {
+    btn.textContent = '✕ Copy failed — select the text above';
+    btn.classList.add('copy-failed');
+  }
+  setTimeout(resetCopyBtn, 1800);
+}
+
+function scanAnother() {
+  document.getElementById('result-section').style.display = 'none';
+  setError(null);
+  if (mode === 'camera') startCamera();
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderHistory() {
+  const section = document.getElementById('history-section');
+  const list = document.getElementById('history-list');
+  section.style.display = history.length ? 'block' : 'none';
+  list.innerHTML = history.map((h, i) =>
+    `<div class="history-item" onclick="showResult(${JSON.stringify(h.text)})">
+      <div class="hi-text">${esc(h.text)}</div>
+      <div class="hi-time">${fmtTime(h.at)}</div>
+    </div>`
+  ).join('');
+}
+
+function clearHistory() {
+  history = [];
+  renderHistory();
+}
+
+function setError(msg) {
+  const el = document.getElementById('scan-error');
+  if (msg) { el.textContent = msg; el.classList.add('show'); }
+  else { el.classList.remove('show'); }
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+<script src="/theme-toggle.js"></script>
+</body>
+</html>

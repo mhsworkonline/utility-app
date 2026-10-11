@@ -73,6 +73,17 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M7 11h6M7 14h4" />
     </svg>
   ),
+  qr: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <rect x="2.5" y="2.5" width="5" height="5" rx="1" />
+      <rect x="12.5" y="2.5" width="5" height="5" rx="1" />
+      <rect x="2.5" y="12.5" width="5" height="5" rx="1" />
+      <rect x="13" y="13" width="2" height="2" fill="currentColor" stroke="none" />
+      <rect x="16" y="13" width="1.5" height="1.5" fill="currentColor" stroke="none" />
+      <rect x="13" y="16" width="1.5" height="1.5" fill="currentColor" stroke="none" />
+      <rect x="16" y="16" width="1.5" height="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  ),
 };
 
 const ICON_STYLE: Record<string, { bg: string; color: string }> = {
@@ -87,6 +98,7 @@ const ICON_STYLE: Record<string, { bg: string; color: string }> = {
   record:     { bg: "#FEF2F2", color: "#DC2626" },
   mic:        { bg: "#F5F3FF", color: "#7C3AED" },
   pdf:        { bg: "#FFFBEB", color: "#D97706" },
+  qr:         { bg: "#F0FDFA", color: "#0D9488" },
 };
 
 export default function AppCard({ app, isNew }: { app: App; isNew?: boolean }) {
