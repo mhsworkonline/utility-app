@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Reminder</title>
+<script>(function(){try{var p=localStorage.getItem('ua_theme')||'system';var m=p==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;document.documentElement.setAttribute('data-theme-mode',m);document.documentElement.setAttribute('data-theme-pref',p);}catch(e){}})();</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F5F4F0;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F7F4;
+  --border:#E2E1DC;
+  --text-dark:#18181A;
+  --text-mid:#4A4A50;
+  --text-muted:#8A8A92;
+  --brand:#4573D9;
+  --brand-light:#EEF2FB;
+  --success:#16A34A;
+  --success-bg:#F0FDF4;
+  --error:#DC2626;
+  --error-bg:#FEF2F2;
+  --warn:#D97706;
+  --warn-bg:#FFFBEB;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.06);
+  --shadow-lg:0 12px 40px rgba(0,0,0,0.18);
+  --radius:16px;
+  --radius-sm:10px;
+}
+:root[data-theme-mode="dark"]{
+  --bg:#18181B;
+  --surface:#212226;
+  --surface-alt:#28292E;
+  --border:#35363D;
+  --text-dark:#F2F2F3;
+  --text-mid:#C7C8CC;
+  --text-muted:#9A9AA2;
+  --brand:#6E93E8;
+  --brand-light:#1E2A44;
+  --success:#22C55E;
+  --success-bg:#0F2A1B;
+  --error:#F87171;
+  --error-bg:#3A1418;
+  --warn:#FBBF24;
+  --warn-bg:#3A2E12;
+  --shadow-card:0 1px 4px rgba(0,0,0,0.3);
+  --shadow-lg:0 12px 40px rgba(0,0,0,0.5);
+}
+.theme-toggle{display:flex;gap:2px;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px;flex-shrink:0;}
+.theme-toggle .tt-btn{width:26px;height:26px;border:none;background:transparent;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background .15s,color .15s;padding:0;}
+.theme-toggle .tt-btn:hover{color:var(--text-dark);}
+.theme-toggle .tt-btn.active{background:var(--brand);color:#fff;}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:2rem 1rem 4rem;}
+.page{max-width:620px;margin:0 auto;}
+
+/* Header */
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-muted);text-decoration:none;letter-spacing:.03em;margin-bottom:14px;}
+.back-link:hover{color:var(--brand);}
+.header{margin-bottom:1.5rem;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.header-title{font-size:22px;font-weight:600;color:var(--text-dark);letter-spacing:-.01em;margin-bottom:4px;background:linear-gradient(135deg,var(--text-dark),var(--brand));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.header-sub{font-size:14px;color:var(--text-muted);line-height:1.5;}
+.tab-warning{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--warn);background:var(--warn-bg);border:1px solid color-mix(in srgb, var(--warn) 30%, transparent);border-radius:var(--radius-sm);padding:10px 12px;margin-top:12px;line-height:1.5;}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-card);margin-bottom:1rem;overflow:hidden;transition:box-shadow .2s;}
+
+/* Add button / form toggle */
+.add-bar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;cursor:pointer;user-select:none;}
+.add-bar-title{font-size:14px;font-weight:600;color:var(--text-dark);display:flex;align-items:center;gap:8px;}
+.add-bar-plus{width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;transition:transform .2s;}
+.add-bar.open .add-bar-plus{transform:rotate(45deg);}
+
+/* Form */
+.form-body{padding:0 1.25rem 1.25rem;display:none;}
+.form-body.show{display:block;}
+.field-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;margin-top:14px;}
+.field-label:first-child{margin-top:0;}
+.field-input,.field-select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-alt);font-family:var(--font);font-size:14px;color:var(--text-dark);outline:none;transition:border-color .15s;}
+.field-input:focus,.field-select:focus{border-color:var(--brand);}
+.field-row{display:flex;gap:10px;}
+.field-row>*{flex:1;min-width:0;}
+.interval-row{display:flex;gap:8px;align-items:center;}
+.interval-row .field-input{width:80px;flex:0 0 80px;}
+.interval-row .field-select{flex:1;}
+.sound-row{display:flex;gap:8px;}
+.sound-row .field-select{flex:1;}
+.btn-preview{flex-shrink:0;width:42px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-alt);color:var(--text-mid);cursor:pointer;font-size:15px;transition:all .15s;}
+.btn-preview:hover{border-color:var(--brand);color:var(--brand);}
+.btn-preview:active{transform:scale(.94);}
+.form-error{font-size:12px;color:var(--error);margin-top:10px;display:none;}
+.form-error.show{display:block;}
+.form-actions{display:flex;gap:8px;margin-top:16px;}
+.btn-save{flex:1;padding:12px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.btn-save:hover{opacity:.9;}
+.btn-cancel{padding:12px 18px;background:var(--surface-alt);color:var(--text-mid);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;}
+
+/* Reminder list */
+.list-section{padding:.25rem 0;}
+.empty-state{padding:3rem 1.5rem;text-align:center;}
+.empty-emoji{font-size:40px;margin-bottom:10px;opacity:.5;}
+.empty-title{font-size:14px;font-weight:600;color:var(--text-dark);margin-bottom:3px;}
+.empty-sub{font-size:12.5px;color:var(--text-muted);}
+
+.reminder-card{display:flex;gap:12px;padding:14px 1.25rem;border-top:1px solid var(--border);transition:background .15s;}
+.reminder-card:first-child{border-top:none;}
+.reminder-card.finished,.reminder-card.off{opacity:.55;}
+.r-status{flex-shrink:0;padding-top:4px;}
+.r-dot{width:10px;height:10px;border-radius:50%;background:var(--border);}
+.r-dot.active{background:var(--success);box-shadow:0 0 0 0 rgba(22,163,74,.5);animation:dotpulse 1.8s ease-out infinite;}
+@keyframes dotpulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.45);}70%{box-shadow:0 0 0 7px rgba(22,163,74,0);}100%{box-shadow:0 0 0 0 rgba(22,163,74,0);}}
+.r-info{flex:1;min-width:0;}
+.r-label{font-size:14.5px;font-weight:600;color:var(--text-dark);margin-bottom:2px;word-break:break-word;}
+.r-meta{font-size:12px;color:var(--text-muted);line-height:1.5;}
+.r-next{font-size:12px;color:var(--brand);font-weight:600;margin-top:3px;}
+.r-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-top:4px;}
+.r-badge.finished{background:var(--surface-alt);color:var(--text-muted);}
+.r-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;}
+.r-toggle{position:relative;width:38px;height:22px;border-radius:12px;background:var(--border);border:none;cursor:pointer;flex-shrink:0;transition:background .2s;}
+.r-toggle.on{background:var(--success);}
+.r-toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.r-toggle.on::after{left:18px;}
+.r-icon-btns{display:flex;gap:4px;}
+.r-icon-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:3px 5px;border-radius:6px;line-height:1;}
+.r-icon-btn:hover{background:var(--surface-alt);color:var(--text-dark);}
+.r-icon-btn.del:hover{color:var(--error);}
+
+.legal{font-size:11px;color:var(--text-muted);padding:.75rem 1.25rem 1rem;border-top:1px solid var(--border);}
+
+/* Alarm overlay */
+.alarm-overlay{position:fixed;inset:0;background:rgba(10,10,12,.72);backdrop-filter:blur(3px);z-index:1000;display:none;align-items:center;justify-content:center;padding:1.25rem;}
+.alarm-overlay.show{display:flex;}
+.alarm-card{background:var(--surface);border-radius:20px;box-shadow:var(--shadow-lg);padding:2rem 1.75rem;max-width:380px;width:100%;text-align:center;}
+.alarm-bell{font-size:52px;margin-bottom:14px;display:inline-block;animation:bellring 1s ease-in-out infinite;}
+@keyframes bellring{0%,100%{transform:rotate(0);}10%{transform:rotate(14deg);}20%{transform:rotate(-12deg);}30%{transform:rotate(9deg);}40%{transform:rotate(-7deg);}50%{transform:rotate(4deg);}60%{transform:rotate(0);}}
+.alarm-eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);margin-bottom:8px;}
+.alarm-label{font-size:20px;font-weight:700;color:var(--text-dark);margin-bottom:6px;word-break:break-word;}
+.alarm-time{font-size:13px;color:var(--text-muted);margin-bottom:22px;}
+.alarm-actions{display:flex;gap:8px;}
+.btn-dismiss{flex:1;padding:13px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:14.5px;font-weight:700;cursor:pointer;}
+.snooze-wrap{flex:1;display:flex;gap:6px;}
+.snooze-select{flex:1;padding:13px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-alt);color:var(--text-dark);font-family:var(--font);font-size:13px;}
+.btn-snooze{padding:0 16px;background:var(--surface-alt);color:var(--text-dark);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.alarm-queue-note{font-size:11.5px;color:var(--text-muted);margin-top:14px;}
+
+/* Responsive */
+@media(max-width:480px){
+  body{padding:1.25rem .75rem 3rem;}
+  .add-bar{padding:.9rem 1rem;}
+  .form-body{padding:0 1rem 1rem;}
+  .reminder-card{padding:12px 1rem;}
+  .legal{padding:.75rem 1rem 1rem;}
+  .field-row{flex-direction:column;gap:14px;}
+  .alarm-actions{flex-direction:column;}
+  .alarm-card{padding:1.75rem 1.25rem;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <a class="back-link" href="/">← Back to apps</a>
+      <div class="theme-toggle" id="theme-toggle"></div>
+    </div>
+    <div class="eyebrow">Utility · Productivity</div>
+    <div class="header-title">Reminder</div>
+    <div class="header-sub">Set recurring alarms between a start and end time — every few minutes, hours, or days.</div>
+    <div class="tab-warning">⚠️ <span>This tab needs to stay open (it can be minimized or in the background) for reminders to ring. Closing it pauses everything until you reopen this page.</span></div>
+  </div>
+
+  <!-- Add -->
+  <div class="card">
+    <div class="add-bar" id="add-bar" onclick="toggleForm()">
+      <div class="add-bar-title">🔔 <span id="add-bar-label">New Reminder</span></div>
+      <div class="add-bar-plus" id="add-bar-plus">+</div>
+    </div>
+    <div class="form-body" id="form-body">
+      <div class="field-label">Label</div>
+      <input class="field-input" id="f-label" type="text" placeholder="e.g. Drink water" maxlength="80"/>
+
+      <div class="field-row">
+        <div>
+          <div class="field-label">Start</div>
+          <input class="field-input" id="f-start" type="datetime-local"/>
+        </div>
+        <div>
+          <div class="field-label">End</div>
+          <input class="field-input" id="f-end" type="datetime-local"/>
+        </div>
+      </div>
+
+      <div class="field-label">Repeat Every</div>
+      <div class="interval-row">
+        <input class="field-input" id="f-interval" type="number" min="1" value="30"/>
+        <select class="field-select" id="f-unit">
+          <option value="minutes">Minutes</option>
+          <option value="hours">Hours</option>
+          <option value="days">Days</option>
+        </select>
+      </div>
+
+      <div class="field-label">Alarm Sound</div>
+      <div class="sound-row">
+        <select class="field-select" id="f-sound">
+          <option value="classic">Classic Beep</option>
+          <option value="chime">Gentle Chime</option>
+          <option value="urgent">Urgent Alert</option>
+          <option value="digital">Digital Alarm</option>
+        </select>
+        <button class="btn-preview" id="btn-preview" title="Preview sound">▶</button>
+      </div>
+
+      <div class="form-error" id="form-error"></div>
+      <div class="form-actions">
+        <button class="btn-save" id="btn-save" onclick="saveReminder()">Save Reminder</button>
+        <button class="btn-cancel" onclick="toggleForm(false)">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="card">
+    <div class="list-section" id="list-section"></div>
+  </div>
+
+  <div class="legal" style="padding:0;margin-top:-.5rem;margin-bottom:1rem;">Reminders are saved in this browser only — nothing is uploaded, and nothing syncs across devices.</div>
+
+</div>
+
+<!-- Alarm overlay -->
+<div class="alarm-overlay" id="alarm-overlay">
+  <div class="alarm-card">
+    <div class="alarm-bell">🔔</div>
+    <div class="alarm-eyebrow">Reminder</div>
+    <div class="alarm-label" id="alarm-label"></div>
+    <div class="alarm-time" id="alarm-time"></div>
+    <div class="alarm-actions">
+      <div class="snooze-wrap">
+        <select class="snooze-select" id="snooze-mins">
+          <option value="5">5 min</option>
+          <option value="10">10 min</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+        </select>
+        <button class="btn-snooze" onclick="snoozeAlarm()">Snooze</button>
+      </div>
+      <button class="btn-dismiss" onclick="dismissAlarm()">Dismiss</button>
+    </div>
+    <div class="alarm-queue-note" id="alarm-queue-note" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Audio — small Web Audio API tone patterns, generated on the fly so there's
+// no sound asset to download. A shared AudioContext is created/resumed on
+// the first real user gesture (Save, or the preview button), since browsers
+// block audio until one happens.
+// ---------------------------------------------------------------------------
+let actx = null;
+function ensureAudio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+
+function beep(ctx, when, freq, dur, type, peak) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(peak ?? 0.25, when + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(when);
+  osc.stop(when + dur + 0.02);
+}
+
+// Each pattern schedules ~1.6s of sound starting at `startTime` and returns
+// that duration, so the loop that repeats it knows how long to wait.
+const SOUND_PATTERNS = {
+  classic(ctx, t) {
+    beep(ctx, t, 880, 0.18, 'sine'); beep(ctx, t + 0.3, 880, 0.18, 'sine');
+    beep(ctx, t + 0.9, 880, 0.18, 'sine'); beep(ctx, t + 1.2, 880, 0.18, 'sine');
+    return 1.7;
+  },
+  chime(ctx, t) {
+    beep(ctx, t, 659, 0.9, 'sine', 0.2); beep(ctx, t + 0.25, 880, 0.9, 'sine', 0.16);
+    beep(ctx, t + 0.5, 1046, 1.1, 'sine', 0.14);
+    return 1.9;
+  },
+  urgent(ctx, t) {
+    for (let i = 0; i < 6; i++) beep(ctx, t + i * 0.16, 1200, 0.1, 'square', 0.18);
+    return 1.4;
+  },
+  digital(ctx, t) {
+    beep(ctx, t, 1500, 0.08, 'square', 0.2); beep(ctx, t + 0.12, 1500, 0.08, 'square', 0.2);
+    beep(ctx, t + 0.24, 1500, 0.08, 'square', 0.2); beep(ctx, t + 0.55, 1100, 0.3, 'square', 0.18);
+    return 1.3;
+  },
+};
+
+let previewTimer = null;
+function previewSound() {
+  const ctx = ensureAudio();
+  const kind = document.getElementById('f-sound').value;
+  if (previewTimer) { clearTimeout(previewTimer); previewTimer = null; }
+  const dur = SOUND_PATTERNS[kind](ctx, ctx.currentTime + 0.02);
+  previewTimer = setTimeout(() => { previewTimer = null; }, dur * 1000);
+}
+
+let alarmLoopTimer = null;
+function startAlarmSound(kind) {
+  stopAlarmSound();
+  const ctx = ensureAudio();
+  const loop = () => {
+    const dur = (SOUND_PATTERNS[kind] || SOUND_PATTERNS.classic)(ctx, ctx.currentTime + 0.02);
+    alarmLoopTimer = setTimeout(loop, dur * 1000);
+  };
+  loop();
+}
+function stopAlarmSound() {
+  if (alarmLoopTimer) { clearTimeout(alarmLoopTimer); alarmLoopTimer = null; }
+}
+
+document.getElementById('btn-preview').addEventListener('click', previewSound);
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+function requestNotifyPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+function notifyOS(label) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('🔔 ' + label, { body: 'Your reminder is ringing.', tag: 'ua-reminder' }); } catch {}
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Data model
+// ---------------------------------------------------------------------------
+const KEY = 'ua_reminders';
+let reminders = [];
+let editingId = null;
+let idSeq = 1;
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY));
+    if (Array.isArray(d)) {
+      reminders = d;
+      idSeq = reminders.reduce((m, r) => Math.max(m, r.id), 0) + 1;
+    }
+  } catch {}
+}
+let saveT = null;
+function save() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch {} }, 150);
+}
+
+const UNIT_MS = { minutes: 60e3, hours: 3600e3, days: 86400e3 };
+
+// First due time at/after `from` on the start+interval grid, never before start.
+function computeNextDue(r, from) {
+  const stepMs = r.intervalValue * UNIT_MS[r.intervalUnit];
+  const start = r.start;
+  if (from <= start) return start;
+  const steps = Math.ceil((from - start) / stepMs);
+  return start + steps * stepMs;
+}
+
+// ---------------------------------------------------------------------------
+// Form
+// ---------------------------------------------------------------------------
+function toggleForm(force) {
+  const body = document.getElementById('form-body');
+  const bar = document.getElementById('add-bar');
+  const show = force !== undefined ? force : !body.classList.contains('show');
+  body.classList.toggle('show', show);
+  bar.classList.toggle('open', show);
+  if (!show) { editingId = null; document.getElementById('add-bar-label').textContent = 'New Reminder'; clearForm(); }
+}
+
+function clearForm() {
+  document.getElementById('f-label').value = '';
+  const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+  const end = new Date(now.getTime() + 24 * 3600e3);
+  document.getElementById('f-start').value = now.toISOString().slice(0, 16);
+  document.getElementById('f-end').value = end.toISOString().slice(0, 16);
+  document.getElementById('f-interval').value = 30;
+  document.getElementById('f-unit').value = 'minutes';
+  document.getElementById('f-sound').value = 'classic';
+  setFormError(null);
+}
+
+function setFormError(msg) {
+  const el = document.getElementById('form-error');
+  if (msg) { el.textContent = msg; el.classList.add('show'); }
+  else el.classList.remove('show');
+}
+
+function saveReminder() {
+  ensureAudio(); // first real user gesture — unlocks audio for this session
+  requestNotifyPermission();
+
+  const label = document.getElementById('f-label').value.trim();
+  const startVal = document.getElementById('f-start').value;
+  const endVal = document.getElementById('f-end').value;
+  const intervalValue = parseInt(document.getElementById('f-interval').value, 10);
+  const intervalUnit = document.getElementById('f-unit').value;
+  const sound = document.getElementById('f-sound').value;
+
+  if (!label) return setFormError('Give this reminder a label.');
+  if (!startVal || !endVal) return setFormError('Set both a start and an end time.');
+  const start = new Date(startVal).getTime();
+  const end = new Date(endVal).getTime();
+  if (end <= start) return setFormError('End time must be after the start time.');
+  if (!intervalValue || intervalValue < 1) return setFormError('Repeat interval must be at least 1.');
+
+  if (editingId) {
+    const r = reminders.find(x => x.id === editingId);
+    Object.assign(r, { label, start, end, intervalValue, intervalUnit, sound });
+    r.nextDue = computeNextDue(r, Math.max(Date.now(), r.start));
+    r.status = Date.now() > r.end ? 'finished' : (r.enabled ? 'active' : 'off');
+  } else {
+    const r = {
+      id: idSeq++, label, start, end, intervalValue, intervalUnit, sound,
+      enabled: true, status: 'active',
+    };
+    r.nextDue = computeNextDue(r, Math.max(Date.now(), r.start));
+    if (Date.now() > r.end) r.status = 'finished';
+    reminders.push(r);
+  }
+
+  save();
+  toggleForm(false);
+  render();
+}
+
+function editReminder(id) {
+  const r = reminders.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('add-bar-label').textContent = 'Edit Reminder';
+  document.getElementById('f-label').value = r.label;
+  document.getElementById('f-start').value = new Date(r.start - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  document.getElementById('f-end').value = new Date(r.end - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  document.getElementById('f-interval').value = r.intervalValue;
+  document.getElementById('f-unit').value = r.intervalUnit;
+  document.getElementById('f-sound').value = r.sound;
+  setFormError(null);
+  toggleForm(true);
+  document.getElementById('form-body').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function deleteReminder(id) {
+  reminders = reminders.filter(r => r.id !== id);
+  alarmQueue = alarmQueue.filter(r => r.id !== id);
+  save();
+  render();
+}
+
+function toggleEnabled(id) {
+  const r = reminders.find(x => x.id === id);
+  if (!r || r.status === 'finished') return;
+  r.enabled = !r.enabled;
+  r.status = r.enabled ? 'active' : 'off';
+  if (r.enabled) r.nextDue = computeNextDue(r, Math.max(Date.now(), r.start));
+  save();
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// Ticking + alarm queue
+// ---------------------------------------------------------------------------
+let alarmQueue = [];
+let currentAlarm = null;
+let autoStopTimer = null;
+
+function tick() {
+  const now = Date.now();
+  let changed = false;
+  for (const r of reminders) {
+    if (r.status === 'finished') continue;
+    if (now > r.end) { r.status = 'finished'; r.enabled = false; changed = true; continue; }
+    if (!r.enabled) continue;
+    if (now >= r.nextDue) {
+      alarmQueue.push({ ...r });
+      const stepMs = r.intervalValue * UNIT_MS[r.intervalUnit];
+      let next = r.nextDue + stepMs;
+      while (next <= now) next += stepMs; // catch up without a storm of fires
+      r.nextDue = next;
+      changed = true;
+    }
+  }
+  if (changed) { save(); render(); }
+  else updateCountdowns();
+  if (!currentAlarm && alarmQueue.length) showNextAlarm();
+}
+setInterval(tick, 1000);
+
+function showNextAlarm() {
+  currentAlarm = alarmQueue.shift();
+  document.getElementById('alarm-label').textContent = currentAlarm.label;
+  document.getElementById('alarm-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const noteEl = document.getElementById('alarm-queue-note');
+  if (alarmQueue.length) { noteEl.style.display = 'block'; noteEl.textContent = `${alarmQueue.length} more reminder${alarmQueue.length === 1 ? '' : 's'} waiting`; }
+  else noteEl.style.display = 'none';
+  document.getElementById('alarm-overlay').classList.add('show');
+  startAlarmSound(currentAlarm.sound);
+  notifyOS(currentAlarm.label);
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  clearTimeout(autoStopTimer);
+  autoStopTimer = setTimeout(dismissAlarm, 90000); // alarm-clock-style auto-stop if ignored
+}
+
+function closeAlarmOverlay() {
+  stopAlarmSound();
+  clearTimeout(autoStopTimer);
+  document.getElementById('alarm-overlay').classList.remove('show');
+  currentAlarm = null;
+  if (alarmQueue.length) setTimeout(showNextAlarm, 300);
+}
+function dismissAlarm() { closeAlarmOverlay(); }
+function snoozeAlarm() {
+  const mins = parseInt(document.getElementById('snooze-mins').value, 10);
+  const r = reminders.find(x => x.id === currentAlarm.id);
+  if (r) { r.nextDue = Date.now() + mins * 60000; save(); render(); }
+  closeAlarmOverlay();
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+function fmtDate(ts) {
+  return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function fmtCountdown(ms) {
+  if (ms <= 0) return 'now';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+function intervalLabel(r) {
+  const n = r.intervalValue;
+  const unit = r.intervalUnit.replace(/s$/, '');
+  return `Every ${n} ${unit}${n === 1 ? '' : 's'}`;
+}
+
+function render() {
+  const list = document.getElementById('list-section');
+  if (!reminders.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-emoji">⏰</div>
+      <div class="empty-title">No reminders yet</div>
+      <div class="empty-sub">Add one above to get started.</div>
+    </div>`;
+    return;
+  }
+
+  const sorted = [...reminders].sort((a, b) => (a.status === 'finished') - (b.status === 'finished') || a.nextDue - b.nextDue);
+
+  list.innerHTML = sorted.map(r => {
+    const statusClass = r.status === 'finished' ? 'finished' : (r.status === 'off' ? 'off' : '');
+    let metaHtml, nextHtml = '';
+    if (r.status === 'finished') {
+      metaHtml = `${intervalLabel(r)} · ${fmtDate(r.start)} → ${fmtDate(r.end)}`;
+      nextHtml = `<span class="r-badge finished">Finished</span>`;
+    } else {
+      metaHtml = `${intervalLabel(r)} · until ${fmtDate(r.end)}`;
+      nextHtml = r.enabled ? `<div class="r-next" data-next="${r.nextDue}">Next in ${fmtCountdown(r.nextDue - Date.now())}</div>` : `<span class="r-badge finished">Off</span>`;
+    }
+    return `<div class="reminder-card ${statusClass}" data-id="${r.id}">
+      <div class="r-status"><div class="r-dot ${r.status === 'active' ? 'active' : ''}"></div></div>
+      <div class="r-info">
+        <div class="r-label">${esc(r.label)}</div>
+        <div class="r-meta">${metaHtml}</div>
+        ${nextHtml}
+      </div>
+      <div class="r-actions">
+        ${r.status !== 'finished' ? `<button class="r-toggle ${r.enabled ? 'on' : ''}" onclick="toggleEnabled(${r.id})" title="${r.enabled ? 'Turn off' : 'Turn on'}"></button>` : ''}
+        <div class="r-icon-btns">
+          <button class="r-icon-btn" onclick="editReminder(${r.id})" title="Edit">✎</button>
+          <button class="r-icon-btn del" onclick="deleteReminder(${r.id})" title="Delete">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateCountdowns() {
+  document.querySelectorAll('.r-next[data-next]').forEach(el => {
+    const next = parseInt(el.dataset.next, 10);
+    el.textContent = `Next in ${fmtCountdown(next - Date.now())}`;
+  });
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+load();
+clearForm();
+render();
+</script>
+<script src="/theme-toggle.js"></script>
+</body>
+</html>
