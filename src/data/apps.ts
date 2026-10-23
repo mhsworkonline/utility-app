@@ -31,6 +31,7 @@ export const fallbackApps: App[] = [
   { id: "pdf-merger", name: "PDF Merger", description: "Combine multiple PDFs into one file — reorder them to control which comes before which. Each file always starts on its own page. Runs entirely in your browser.", url: "/pdf-merger.html", icon: "pdf", tags: ["Utility", "Documents"] },
   { id: "qr-reader", name: "QR Code Reader", description: "Upload a QR code image or scan one with your camera — decoded entirely in your browser, nothing is uploaded.", url: "/qr-reader.html", icon: "qr", tags: ["Utility", "Media"] },
   { id: "reminder", name: "Reminder", description: "Set recurring alarms between a start and end time — every few minutes, hours, or days. Keep the tab open and it rings with sound and a notification.", url: "/reminder.html", icon: "bell", tags: ["Utility", "Productivity"] },
+  { id: "video-trimmer", name: "Video Trimmer", description: "Trim the ends and cut sections out of the middle of a video, then export as MP4 — entirely in your browser, nothing is uploaded.", url: "/video-trimmer.html", icon: "scissors", tags: ["Utility", "Media"] },
 ];
 
 /** Server-side catalog fetch. Hidden apps are never returned to the homepage. */

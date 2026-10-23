@@ -72,6 +72,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M7 11h6M7 14h4" />
     </svg>
   ),
+  scissors: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <circle cx="5" cy="5" r="2" />
+      <circle cx="5" cy="15" r="2" />
+      <path d="M6.5 6.5L16 16M6.5 13.5L16 4" />
+    </svg>
+  ),
   bell: (
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
       <path d="M10 2.5c-2 0-3.5 1.6-3.5 3.6v2.3c0 .5-.2 1-.5 1.4l-1.2 1.5c-.5.6-.1 1.6.7 1.6h9c.8 0 1.2-1 .7-1.6l-1.2-1.5c-.3-.4-.5-.9-.5-1.4V6.1c0-2-1.5-3.6-3.5-3.6z" />
@@ -105,6 +112,7 @@ const ICON_STYLE: Record<string, { bg: string; color: string }> = {
   pdf:        { bg: "#FFFBEB", color: "#D97706" },
   qr:         { bg: "#F0FDFA", color: "#0D9488" },
   bell:       { bg: "#FFF1F2", color: "#E11D48" },
+  scissors:   { bg: "#ECFEFF", color: "#0891B2" },
 };
 
 /**

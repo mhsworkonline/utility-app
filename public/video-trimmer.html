@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Video Trimmer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+<script>(function(){try{var p=localStorage.getItem('ua_theme')||'system';var m=p==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;document.documentElement.setAttribute('data-theme-mode',m);document.documentElement.setAttribute('data-theme-pref',p);}catch(e){}})();</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F5F4F0;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F7F4;
+  --border:#E2E1DC;
+  --text-dark:#18181A;
+  --text-mid:#4A4A50;
+  --text-muted:#8A8A92;
+  --brand:#4573D9;
+  --brand-light:#EEF2FB;
+  --purple:#8B5CF6;
+  --teal:#06B6D4;
+  --pink:#EC4899;
+  --success:#16A34A;
+  --success-bg:#F0FDF4;
+  --error:#DC2626;
+  --error-bg:#FEF2F2;
+  --cut:#F43F5E;
+  --cut-bg:rgba(244,63,94,0.14);
+  --kept:#10B981;
+  --kept-bg:rgba(16,185,129,0.14);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --font-display:'Outfit',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --shadow-card:0 2px 10px rgba(0,0,0,0.07);
+  --shadow-lg:0 16px 40px rgba(0,0,0,0.16);
+  --shadow-glow:0 6px 20px rgba(69,115,217,0.35);
+  --radius:18px;
+  --radius-sm:12px;
+}
+:root[data-theme-mode="dark"]{
+  --bg:#18181B;
+  --surface:#212226;
+  --surface-alt:#28292E;
+  --border:#35363D;
+  --text-dark:#F2F2F3;
+  --text-mid:#C7C8CC;
+  --text-muted:#9A9AA2;
+  --brand:#6E93E8;
+  --brand-light:#1E2A44;
+  --purple:#A78BFA;
+  --teal:#22D3EE;
+  --pink:#F472B6;
+  --success:#22C55E;
+  --success-bg:#0F2A1B;
+  --error:#F87171;
+  --error-bg:#3A1418;
+  --cut:#FB7185;
+  --cut-bg:rgba(251,113,133,0.18);
+  --kept:#34D399;
+  --kept-bg:rgba(52,211,153,0.16);
+  --shadow-card:0 2px 10px rgba(0,0,0,0.35);
+  --shadow-lg:0 16px 40px rgba(0,0,0,0.5);
+  --shadow-glow:0 6px 24px rgba(110,147,232,0.45);
+}
+.theme-toggle{display:flex;gap:3px;background:var(--surface-alt);border:1px solid var(--border);border-radius:24px;padding:3px;flex-shrink:0;}
+.theme-toggle .tt-btn{width:34px;height:34px;border:none;background:transparent;border-radius:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background .15s,color .15s;padding:0;}
+.theme-toggle .tt-btn svg{width:18px;height:18px;}
+.theme-toggle .tt-btn:hover{color:var(--text-dark);}
+.theme-toggle .tt-btn.active{background:var(--brand);color:#fff;}
+body{font-family:var(--font);background:var(--bg);color:var(--text-dark);-webkit-font-smoothing:antialiased;min-height:100vh;padding:1.5rem 1.5rem 3rem;}
+.page{max-width:1240px;margin:0 auto;}
+
+/* Topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:700;color:var(--text-muted);text-decoration:none;transition:color .15s;}
+.back-link:hover{color:var(--brand);}
+
+/* Hero */
+.hero{display:flex;align-items:center;gap:1.1rem;background:linear-gradient(120deg,var(--brand) 0%,var(--purple) 55%,var(--teal) 100%);border-radius:var(--radius);padding:1.5rem 1.75rem;margin-bottom:1.25rem;box-shadow:var(--shadow-glow);position:relative;overflow:hidden;}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 85% 20%,rgba(255,255,255,.25),transparent 55%);pointer-events:none;}
+.hero-icon{font-size:48px;flex-shrink:0;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25));}
+.eyebrow{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-bottom:4px;}
+.header-title{font-family:var(--font-display);font-size:clamp(30px,4vw,42px);font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:4px;line-height:1.08;}
+.header-sub{font-size:16px;color:rgba(255,255,255,.92);line-height:1.5;max-width:640px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-card);overflow:hidden;}
+
+/* Upload */
+.upload-card-wrap{padding:1.5rem;margin-bottom:1rem;}
+.upload-card{border:3px dashed var(--border);border-radius:var(--radius-sm);padding:3.5rem 1.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s,transform .15s;background:linear-gradient(135deg,var(--surface-alt),var(--surface));}
+.upload-card:hover{border-color:var(--brand);background:var(--brand-light);transform:scale(1.005);}
+.upload-card.drag-over{border-color:var(--purple);background:var(--brand-light);transform:scale(1.01);}
+.upload-icon-circle{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem;box-shadow:var(--shadow-glow);}
+.upload-icon{font-size:40px;}
+.upload-title{font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--text-dark);margin-bottom:6px;letter-spacing:-.01em;}
+.upload-sub{font-size:16px;color:var(--text-muted);}
+#file-input{display:none;}
+.upload-error{font-size:15px;font-weight:600;color:var(--error);margin-top:14px;text-align:center;display:none;}
+
+/* Editor grid — side by side so nothing has to stack vertically on a normal screen */
+.editor-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:1.1rem;align-items:start;}
+
+.media-col{display:flex;flex-direction:column;}
+.player-wrap{background:#000;position:relative;border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;aspect-ratio:16/9;max-height:min(44vh,440px);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+#preview-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(40px) brightness(.55) saturate(1.4);transform:scale(1.2);}
+.preview-video{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;object-fit:contain;display:block;box-shadow:0 8px 28px rgba(0,0,0,.5);opacity:0;z-index:0;pointer-events:none;}
+.preview-video.is-active-video{opacity:1;z-index:1;}
+.play-toggle{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);border:2px solid rgba(255,255,255,.85);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .15s;}
+.player-wrap:hover .play-toggle{background:rgba(0,0,0,.6);}
+.play-toggle svg{width:26px;height:26px;}
+.play-toggle .icon-play{margin-left:3px;}
+.player-wrap.is-paused .play-toggle{opacity:1;}
+.player-wrap:not(.is-paused) .play-toggle{opacity:0;}
+.player-wrap:not(.is-paused):hover .play-toggle{opacity:1;}
+.file-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:1rem 1.25rem;}
+.file-name{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-meta{font-size:14px;color:var(--text-muted);margin-top:2px;font-weight:600;}
+.btn-change{flex-shrink:0;font-size:14px;font-weight:700;color:var(--brand);background:var(--brand-light);border:none;border-radius:24px;padding:10px 16px;cursor:pointer;transition:all .15s;}
+.btn-change:hover{opacity:.82;}
+
+.control-col{padding:1.3rem 1.3rem 1.4rem;display:flex;flex-direction:column;}
+.step-pill{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:linear-gradient(120deg,var(--purple),var(--pink));border-radius:20px;padding:6px 14px;margin-bottom:1rem;width:fit-content;}
+
+.timeline-toprow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.time-label{font-size:19px;font-weight:800;color:var(--text-dark);font-variant-numeric:tabular-nums;min-width:48px;}
+.time-label.end{text-align:right;}
+.timeline-hint{font-size:14px;color:var(--text-muted);font-weight:600;text-align:center;flex:1;padding:0 10px;}
+
+.timeline{position:relative;height:64px;margin:0 2px;touch-action:none;user-select:none;}
+.tl-track{position:absolute;left:0;right:0;top:20px;bottom:20px;background:var(--surface-alt);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.tl-filmstrip{position:absolute;inset:0;display:flex;background:#111;}
+.tl-filmstrip img{flex:1 1 0;height:100%;width:100%;object-fit:cover;display:block;opacity:0;transition:opacity .25s ease;}
+.tl-filmstrip img.loaded{opacity:1;}
+.tl-filmstrip.shimmer{background:linear-gradient(100deg,var(--surface-alt) 30%,var(--border) 50%,var(--surface-alt) 70%);background-size:200% 100%;animation:shimmer 1.3s linear infinite;}
+@keyframes shimmer{to{background-position:-200% 0;}}
+.tl-kept{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,var(--kept-bg),var(--kept-bg));border-right:2px solid var(--kept);border-left:2px solid var(--kept);backdrop-filter:saturate(1.4);}
+.tl-dim{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,var(--surface-alt),var(--surface-alt) 6px,var(--border) 6px,var(--border) 8px);opacity:.7;}
+.tl-cut{position:absolute;top:0;bottom:0;background-color:var(--cut);background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.22) 0 7px,transparent 7px 14px);border-left:2px solid var(--cut);border-right:2px solid var(--cut);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:filter .15s;overflow:hidden;}
+.tl-cut:hover{filter:brightness(1.1);}
+.tl-cut-x{color:#fff;font-size:15px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.4);pointer-events:none;}
+.tl-cut-len{color:rgba(255,255,255,.9);font-size:10px;font-weight:700;pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+.tl-selection{position:absolute;top:0;bottom:0;background:var(--cut-bg);border:2px dashed var(--cut);pointer-events:none;border-radius:4px;}
+.tl-playhead{position:absolute;top:8px;bottom:8px;width:3px;background:linear-gradient(var(--purple),var(--pink));pointer-events:none;box-shadow:0 0 0 2px var(--surface);border-radius:2px;}
+.tl-handle{position:absolute;top:0;bottom:0;width:28px;margin-left:-14px;cursor:ew-resize;display:flex;align-items:center;justify-content:center;z-index:5;}
+.tl-handle-grip{width:12px;height:42px;background:linear-gradient(180deg,var(--brand),var(--purple));border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transition:transform .12s;}
+.tl-handle-grip::before{content:'';width:2px;height:16px;background:rgba(255,255,255,.8);border-radius:1px;box-shadow:4px 0 0 rgba(255,255,255,.8),-4px 0 0 rgba(255,255,255,.8);}
+.tl-handle:hover .tl-handle-grip,.tl-handle.dragging .tl-handle-grip{transform:scaleX(1.25);}
+
+.timeline-footer{display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:10px;}
+.kept-summary{font-size:16px;color:var(--text-mid);font-weight:600;}
+.kept-summary b{color:var(--kept);font-weight:800;}
+.btn-link{background:none;border:none;font-family:var(--font);font-size:14px;font-weight:700;color:var(--text-muted);cursor:pointer;padding:0;}
+.btn-link:hover{color:var(--error);}
+
+.divider{height:1px;background:var(--border);margin:1.1rem 0;}
+
+.btn-export{width:100%;font-size:20px;padding:17px;background:linear-gradient(120deg,var(--brand),var(--purple));color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;cursor:pointer;transition:transform .12s,box-shadow .12s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:var(--shadow-glow);}
+.btn-export:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+.btn-export:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 10px 28px rgba(139,92,246,.4);}
+.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+.spinner.show{display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.progress-wrap{margin-top:14px;display:none;}
+.progress-wrap.show{display:block;}
+.progress-bar{height:9px;border-radius:5px;background:var(--surface-alt);overflow:hidden;}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--brand),var(--purple),var(--pink));border-radius:5px;transition:width .2s ease;}
+.progress-label{font-size:14px;color:var(--text-muted);margin-top:8px;text-align:center;font-weight:600;}
+.export-error{font-size:14px;font-weight:700;color:var(--error);margin-top:12px;text-align:center;display:none;}
+.export-done{font-size:15px;color:var(--success);margin-top:12px;text-align:center;display:none;font-weight:800;}
+
+.legal{font-size:13px;color:var(--text-muted);padding:1rem .25rem 0;line-height:1.6;}
+
+/* Responsive */
+@media(max-width:860px){
+  .editor-grid{grid-template-columns:1fr;}
+  #preview{max-height:40vh;}
+}
+@media(max-width:480px){
+  body{padding:1rem .85rem 2.5rem;}
+  .hero{flex-direction:column;align-items:flex-start;padding:1.25rem;gap:.6rem;}
+  .hero-icon{font-size:36px;}
+  .upload-card-wrap{padding:1rem;}
+  .upload-card{padding:2.25rem 1rem;}
+  .control-col{padding:1.1rem;}
+  .timeline-hint{display:none;}
+  .file-bar{padding:.9rem 1rem;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <a class="back-link" href="/">← Back to apps</a>
+    <div class="theme-toggle" id="theme-toggle"></div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-icon">🎬</div>
+    <div>
+      <div class="eyebrow">Utility · Media</div>
+      <div class="header-title">Video Trimmer</div>
+      <div class="header-sub">Trim the ends and cut sections from the middle, then export as MP4 — entirely in your browser.</div>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card upload-card-wrap" id="upload-section">
+    <div class="upload-card" id="upload-zone">
+      <input type="file" id="file-input" accept="video/*"/>
+      <div class="upload-icon-circle"><span class="upload-icon">🎬</span></div>
+      <div class="upload-title">Drop a video here</div>
+      <div class="upload-sub">or click to browse — works best under ~300 MB</div>
+    </div>
+    <div class="upload-error" id="upload-error"></div>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor-grid" id="editor-section" style="display:none">
+    <div class="media-col card">
+      <div class="player-wrap is-paused" id="player-wrap">
+        <video id="preview-bg" muted playsinline aria-hidden="true" tabindex="-1"></video>
+        <!-- Two interchangeable players: while one is visible and playing, the
+             other sits hidden, pre-seeked to the start of whatever comes after
+             the next cut. Reaching a cut swaps which one is "active" instead of
+             re-seeking the live element, so the preview never has to stall
+             mid-playback to decode across the gap — it just looks continuous. -->
+        <video class="preview-video is-active-video" id="preview" playsinline></video>
+        <video class="preview-video" id="preview-alt" playsinline></video>
+        <button class="play-toggle" id="play-toggle" type="button" aria-label="Play">
+          <svg class="icon-play" id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="icon-pause" id="icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </button>
+      </div>
+      <div class="file-bar">
+        <div style="min-width:0;">
+          <div class="file-name" id="file-name"></div>
+          <div class="file-meta" id="file-meta"></div>
+        </div>
+        <button class="btn-change" onclick="pickNewFile()">Change video</button>
+      </div>
+    </div>
+
+    <div class="control-col card">
+      <span class="step-pill">✂️ Trim &amp; cut</span>
+
+      <div class="timeline-toprow">
+        <span class="time-label" id="time-current">0:00</span>
+        <span class="timeline-hint">Drag edges to trim · drag inside to cut · tap a cut to remove it</span>
+        <span class="time-label end" id="time-duration">0:00</span>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="tl-track"><div class="tl-filmstrip shimmer" id="tl-filmstrip"></div></div>
+        <div class="tl-kept" id="tl-kept"></div>
+        <div class="tl-dim" id="tl-dim-left"></div>
+        <div class="tl-dim" id="tl-dim-right"></div>
+        <div id="tl-cuts"></div>
+        <div class="tl-selection" id="tl-selection" style="display:none"></div>
+        <div class="tl-playhead" id="tl-playhead"></div>
+        <div class="tl-handle tl-handle-left" id="handle-left"><div class="tl-handle-grip"></div></div>
+        <div class="tl-handle tl-handle-right" id="handle-right"><div class="tl-handle-grip"></div></div>
+      </div>
+      <div class="timeline-footer">
+        <span class="kept-summary" id="kept-summary"></span>
+        <button class="btn-link" onclick="resetEdits()">Reset all cuts</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="btn-export" id="btn-export" onclick="exportVideo()">
+        <span class="spinner" id="export-spinner"></span>
+        <span id="export-label">🚀 Export as MP4</span>
+      </button>
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-label" id="progress-label">Loading video engine…</div>
+      </div>
+      <div class="export-error" id="export-error"></div>
+      <div class="export-done" id="export-done"></div>
+    </div>
+  </div>
+
+  <div class="legal">Processing happens locally using FFmpeg compiled to WebAssembly. Nothing you upload leaves your device. Cuts snap to the nearest keyframe for a fast export, so edges may land a second or two off from exactly where you dragged.</div>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let file = null;
+let duration = 0;
+let trimStart = 0;
+let trimEnd = 0;
+let cuts = []; // [{start,end}] sorted, non-overlapping, strictly within (trimStart,trimEnd)
+let dragState = null; // {type:'handle-left'|'handle-right'|'select', ...}
+
+// Two interchangeable <video> elements so cut-skipping during playback never
+// has to live-seek the element that's actually on screen (see swapToStandby
+// below) — `video`/`videoAlt` are mutable and get swapped, `videoSlotA/B` are
+// the fixed DOM nodes, used only to register listeners on both once.
+const videoSlotA = document.getElementById('preview');
+const videoSlotB = document.getElementById('preview-alt');
+let video = videoSlotA;
+let videoAlt = videoSlotB;
+let preloadTargetTime = null; // time we've already told videoAlt to seek to
+const videoBg = document.getElementById('preview-bg');
+const playerWrap = document.getElementById('player-wrap');
+const playToggleBtn = document.getElementById('play-toggle');
+const iconPlay = document.getElementById('icon-play');
+const iconPause = document.getElementById('icon-pause');
+const timeline = document.getElementById('timeline');
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+// ---------------------------------------------------------------------------
+// Upload
+// ---------------------------------------------------------------------------
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('video/'));
+  if (f) loadFile(f); else setUploadError('Please drop a video file.');
+});
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files[0];
+  if (f) loadFile(f);
+  fileInput.value = '';
+});
+
+function pickNewFile() { fileInput.click(); }
+
+function setUploadError(msg) {
+  const el = document.getElementById('upload-error');
+  if (msg) { el.textContent = msg; el.style.display = 'block'; }
+  else el.style.display = 'none';
+}
+
+function loadFile(f) {
+  setUploadError(null);
+  file = f;
+  const url = URL.createObjectURL(f);
+  // A previous file may have left video/videoAlt swapped mid-preview — reset
+  // to the canonical pairing before loading the new one.
+  video = videoSlotA;
+  videoAlt = videoSlotB;
+  video.classList.add('is-active-video');
+  videoAlt.classList.remove('is-active-video');
+  preloadTargetTime = null;
+  video.src = url;
+  videoAlt.src = url;
+  videoBg.src = url; // ambient blurred backdrop — fills the letterboxed space around portrait/odd-aspect videos instead of flat black bars
+  video.onloadedmetadata = () => {
+    duration = video.duration;
+    trimStart = 0;
+    trimEnd = duration;
+    cuts = [];
+    document.getElementById('upload-section').style.display = 'none';
+    document.getElementById('editor-section').style.display = 'grid';
+    document.getElementById('file-name').textContent = f.name;
+    document.getElementById('file-meta').textContent = `${fmtSize(f.size)} · ${fmtTime(duration)}`;
+    resetExportUI();
+    playerWrap.classList.add('is-paused');
+    iconPlay.style.display = ''; iconPause.style.display = 'none';
+    render();
+    generateFilmstrip(f);
+  };
+  video.onerror = () => setUploadError('Could not read that file as a video.');
+}
+
+// Registers a listener on BOTH video elements, but only runs it for whichever
+// one is currently "active" — needed because `video` can point at either DOM
+// node after a swapToStandby(), and listeners attached before a swap stay
+// attached to the physical element, not the variable.
+function onActiveEvent(type, handler) {
+  const listener = e => { if (e.currentTarget === video) handler(e); };
+  videoSlotA.addEventListener(type, listener);
+  videoSlotB.addEventListener(type, listener);
+}
+
+// The blurred backdrop mirrors the real player exactly — play/pause together,
+// same position — instead of looping on its own, which looked like a second,
+// uncontrollable video running behind the one you're actually editing.
+onActiveEvent('play', () => { videoBg.currentTime = video.currentTime; videoBg.play().catch(() => {}); });
+onActiveEvent('pause', () => videoBg.pause());
+onActiveEvent('seeked', () => { videoBg.currentTime = video.currentTime; });
+
+// Play/pause — click anywhere on the player, or the circle button itself.
+// This is a *preview* of the edit, not the raw file: playback respects the
+// current trim handles and cuts (see onActiveEvent('timeupdate', ...) below),
+// so hitting play always shows what the exported video will actually contain.
+onActiveEvent('play', () => {
+  playerWrap.classList.remove('is-paused');
+  iconPlay.style.display = 'none'; iconPause.style.display = ''; playToggleBtn.setAttribute('aria-label', 'Pause');
+  schedulePreload();
+});
+onActiveEvent('pause', () => {
+  playerWrap.classList.add('is-paused');
+  iconPlay.style.display = ''; iconPause.style.display = 'none'; playToggleBtn.setAttribute('aria-label', 'Play');
+});
+playerWrap.addEventListener('click', () => {
+  if (!duration) return;
+  if (video.paused) {
+    // If we're parked at the end of the previewable range (or inside a cut
+    // after one got added mid-scrub), restart from the top of the edit
+    // instead of just sitting there doing nothing.
+    if (video.currentTime >= trimEnd - 0.05 || video.currentTime < trimStart) video.currentTime = trimStart;
+    video.play().catch(() => {});
+  } else {
+    video.pause();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Timeline filmstrip — real thumbnail frames pulled from the video itself
+// (via a hidden <video> + <canvas>, no FFmpeg needed), so the timeline shows
+// what's actually in the clip instead of a flat color bar.
+// ---------------------------------------------------------------------------
+let filmstripToken = 0;
+async function generateFilmstrip(f) {
+  const myToken = ++filmstripToken;
+  const host = document.getElementById('tl-filmstrip');
+  host.classList.add('shimmer');
+  host.innerHTML = '';
+
+  const count = 12;
+  const probe = document.createElement('video');
+  probe.muted = true;
+  probe.playsInline = true;
+  probe.preload = 'auto';
+  probe.src = URL.createObjectURL(f);
+
+  const seekTo = t => new Promise(resolve => {
+    const onSeeked = () => { probe.removeEventListener('seeked', onSeeked); resolve(); };
+    probe.addEventListener('seeked', onSeeked);
+    probe.currentTime = t;
+  });
+
+  try {
+    await new Promise((resolve, reject) => {
+      probe.onloadedmetadata = resolve;
+      probe.onerror = () => reject(new Error('probe failed'));
+    });
+    if (myToken !== filmstripToken) return; // a newer video was loaded while this was working
+
+    const w = 96, h = Math.max(1, Math.round(w * probe.videoHeight / probe.videoWidth));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const dur = probe.duration;
+
+    const imgs = [];
+    for (let i = 0; i < count; i++) {
+      const img = document.createElement('img');
+      host.appendChild(img);
+      imgs.push(img);
+    }
+
+    for (let i = 0; i < count; i++) {
+      if (myToken !== filmstripToken) return;
+      const t = Math.min(dur - 0.05, (i + 0.5) / count * dur);
+      await seekTo(Math.max(0, t));
+      if (myToken !== filmstripToken) return;
+      ctx.drawImage(probe, 0, 0, w, h);
+      imgs[i].src = canvas.toDataURL('image/jpeg', 0.6);
+      imgs[i].onload = () => imgs[i].classList.add('loaded');
+    }
+    host.classList.remove('shimmer');
+  } catch {
+    host.classList.remove('shimmer'); // leave it as a plain dark strip rather than stuck shimmering forever
+  } finally {
+    URL.revokeObjectURL(probe.src);
+  }
+}
+
+function fmtSize(bytes) {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+function fmtTime(sec) {
+  sec = Math.max(0, sec);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+  const mm = h ? String(m).padStart(2, '0') : String(m);
+  const ss = String(s).padStart(2, '0');
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+// ---------------------------------------------------------------------------
+// Timeline geometry helpers
+// ---------------------------------------------------------------------------
+function timeToPct(t) { return duration > 0 ? (t / duration) * 100 : 0; }
+function clientXToTime(clientX) {
+  const r = timeline.getBoundingClientRect();
+  const pct = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+  return pct * duration;
+}
+
+// ---------------------------------------------------------------------------
+// Cuts model
+// ---------------------------------------------------------------------------
+function addCut(start, end) {
+  start = Math.max(trimStart, Math.min(start, end));
+  end = Math.min(trimEnd, Math.max(start, end));
+  if (end - start < 0.15) return; // ignore near-zero accidental cuts
+  let merged = { start, end };
+  cuts = cuts.filter(c => {
+    const overlaps = c.start < merged.end && c.end > merged.start;
+    if (overlaps) { merged.start = Math.min(merged.start, c.start); merged.end = Math.max(merged.end, c.end); return false; }
+    return true;
+  });
+  cuts.push(merged);
+  cuts.sort((a, b) => a.start - b.start);
+}
+function removeCut(index) { cuts.splice(index, 1); render(); }
+
+function clampCutsToTrim() {
+  cuts = cuts
+    .map(c => ({ start: Math.max(c.start, trimStart), end: Math.min(c.end, trimEnd) }))
+    .filter(c => c.end - c.start > 0.1);
+}
+
+function getKeptSegments() {
+  const kept = [];
+  let cursor = trimStart;
+  for (const c of cuts) {
+    if (c.start > cursor) kept.push({ start: cursor, end: Math.min(c.start, trimEnd) });
+    cursor = Math.max(cursor, c.end);
+  }
+  if (cursor < trimEnd) kept.push({ start: cursor, end: trimEnd });
+  return kept.filter(s => s.end - s.start > 0.05);
+}
+
+function resetEdits() {
+  trimStart = 0; trimEnd = duration; cuts = [];
+  resetExportUI();
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+function render() {
+  document.getElementById('tl-dim-left').style.left = '0%';
+  document.getElementById('tl-dim-left').style.width = timeToPct(trimStart) + '%';
+  document.getElementById('tl-dim-right').style.left = timeToPct(trimEnd) + '%';
+  document.getElementById('tl-dim-right').style.width = (100 - timeToPct(trimEnd)) + '%';
+
+  const kept = document.getElementById('tl-kept');
+  kept.style.left = timeToPct(trimStart) + '%';
+  kept.style.width = (timeToPct(trimEnd) - timeToPct(trimStart)) + '%';
+
+  document.getElementById('handle-left').style.left = timeToPct(trimStart) + '%';
+  document.getElementById('handle-right').style.left = timeToPct(trimEnd) + '%';
+
+  const cutsHost = document.getElementById('tl-cuts');
+  cutsHost.innerHTML = cuts.map((c, i) => {
+    const left = timeToPct(c.start), width = timeToPct(c.end) - timeToPct(c.start);
+    const lenLabel = width > 6 ? `<span class="tl-cut-len">${fmtTime(c.end - c.start)}</span>` : '';
+    return `<div class="tl-cut" style="left:${left}%;width:${width}%" onclick="removeCut(${i})" title="Remove this cut (${fmtTime(c.end - c.start)})"><span class="tl-cut-x">✕</span>${lenLabel}</div>`;
+  }).join('');
+
+  updatePlayhead();
+  updateSummary();
+  schedulePreload();
+}
+
+function updatePlayhead() {
+  document.getElementById('tl-playhead').style.left = timeToPct(video.currentTime || 0) + '%';
+  document.getElementById('time-current').textContent = fmtTime(video.currentTime || 0);
+  document.getElementById('time-duration').textContent = fmtTime(duration);
+}
+
+function updateSummary() {
+  const kept = getKeptSegments();
+  const keptDur = kept.reduce((s, k) => s + (k.end - k.start), 0);
+  const el = document.getElementById('kept-summary');
+  if (cuts.length === 0 && trimStart === 0 && trimEnd >= duration - 0.05) {
+    el.innerHTML = `Keeping the <b>full video</b> · ${fmtTime(duration)}`;
+  } else {
+    el.innerHTML = `Keeping <b>${kept.length}</b> segment${kept.length === 1 ? '' : 's'} · <b>${fmtTime(keptDur)}</b> of ${fmtTime(duration)}`;
+  }
+  document.getElementById('btn-export').disabled = kept.length === 0;
+}
+
+// ---------------------------------------------------------------------------
+// Pointer interactions: trim handles, cut selection, seek-by-click
+// ---------------------------------------------------------------------------
+function startHandleDrag(which) {
+  return e => {
+    e.preventDefault();
+    dragState = { type: which };
+    document.getElementById(which === 'handle-left' ? 'handle-left' : 'handle-right').classList.add('dragging');
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp, { once: true });
+  };
+}
+document.getElementById('handle-left').addEventListener('pointerdown', startHandleDrag('handle-left'));
+document.getElementById('handle-right').addEventListener('pointerdown', startHandleDrag('handle-right'));
+
+let selStart = null, selMoved = false;
+timeline.addEventListener('pointerdown', e => {
+  if (e.target.closest('.tl-handle') || e.target.closest('.tl-cut')) return;
+  selStart = clientXToTime(e.clientX);
+  selMoved = false;
+  dragState = { type: 'select' };
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp, { once: true });
+});
+
+function onPointerMove(e) {
+  if (!dragState) return;
+  if (dragState.type === 'handle-left') {
+    trimStart = Math.min(clientXToTime(e.clientX), trimEnd - 0.2);
+    trimStart = Math.max(0, trimStart);
+    clampCutsToTrim();
+    render();
+  } else if (dragState.type === 'handle-right') {
+    trimEnd = Math.max(clientXToTime(e.clientX), trimStart + 0.2);
+    trimEnd = Math.min(duration, trimEnd);
+    clampCutsToTrim();
+    render();
+  } else if (dragState.type === 'select') {
+    const now = clientXToTime(e.clientX);
+    if (Math.abs(now - selStart) * (timeline.getBoundingClientRect().width / duration) > 4) selMoved = true;
+    const a = Math.min(selStart, now), b = Math.max(selStart, now);
+    const sel = document.getElementById('tl-selection');
+    sel.style.display = 'block';
+    sel.style.left = timeToPct(a) + '%';
+    sel.style.width = (timeToPct(b) - timeToPct(a)) + '%';
+  }
+}
+
+function onPointerUp(e) {
+  window.removeEventListener('pointermove', onPointerMove);
+  document.querySelectorAll('.tl-handle.dragging').forEach(h => h.classList.remove('dragging'));
+  if (dragState && dragState.type === 'select') {
+    document.getElementById('tl-selection').style.display = 'none';
+    const now = clientXToTime(e.clientX);
+    if (selMoved) {
+      addCut(Math.min(selStart, now), Math.max(selStart, now));
+    } else {
+      video.currentTime = Math.min(trimEnd, Math.max(trimStart, now));
+    }
+  }
+  dragState = null;
+  resetExportUI();
+  render();
+}
+
+// Live "preview only the kept parts" — skip over cut ranges and stop at
+// trimEnd during playback, by swapping to a standby element that's already
+// pre-seeked past the cut instead of live-seeking the one that's playing
+// (a live seek mid-playback causes an audible/visible stutter; swapping to
+// an element that's already sitting ready at the right frame doesn't).
+onActiveEvent('timeupdate', () => {
+  updatePlayhead();
+  if (video.paused || !duration) return;
+  if (video.currentTime < trimStart) { video.currentTime = trimStart; return; }
+
+  const kept = getKeptSegments();
+  const curSeg = kept.find(s => video.currentTime >= s.start - 0.001 && video.currentTime < s.end);
+  // Either we're right at the end of the current kept segment, or timeupdate
+  // simply didn't fire densely enough and playback already overshot into the
+  // cut (so curSeg is undefined) — both cases need the same jump forward, and
+  // both should prefer the pre-seeked standby over a live seek.
+  if (curSeg && video.currentTime < curSeg.end - 0.03) return; // comfortably inside a kept segment, nothing to do
+
+  const next = curSeg ? kept[kept.indexOf(curSeg) + 1] : kept.find(s => s.start > video.currentTime);
+  if (!next) { video.pause(); video.currentTime = trimEnd; return; }
+
+  if (preloadTargetTime !== null && Math.abs(preloadTargetTime - next.start) < 0.01 && videoAlt.readyState >= 2) {
+    swapToStandby(next.start);
+  } else {
+    // Standby wasn't ready in time (very short segment, or we only just
+    // scheduled it) — fall back to a direct seek so playback never gets
+    // stuck showing cut content, even if this one jump isn't seamless.
+    video.currentTime = next.start;
+  }
+});
+
+// Keeps the hidden standby element parked at the start of whatever kept
+// segment comes after the one currently playing, so it's ready the instant
+// playback reaches the next cut.
+function schedulePreload() {
+  if (!duration) return;
+  const kept = getKeptSegments();
+  const t = video.currentTime;
+  let idx = kept.findIndex(s => t >= s.start - 0.001 && t < s.end);
+  if (idx === -1) idx = kept.findIndex(s => s.start >= t);
+  if (idx === -1 || idx >= kept.length - 1) { preloadTargetTime = null; return; }
+  const nextStart = kept[idx + 1].start;
+  if (preloadTargetTime !== null && Math.abs(preloadTargetTime - nextStart) < 0.01) return;
+  preloadTargetTime = nextStart;
+  videoAlt.currentTime = nextStart;
+}
+
+// Makes the pre-seeked standby element the visible/active one and hands
+// the outgoing element the standby role back, instead of seeking live.
+function swapToStandby(startAt) {
+  const outgoing = video, incoming = videoAlt;
+  if (Math.abs(incoming.currentTime - startAt) > 0.15) incoming.currentTime = startAt;
+  video = incoming;
+  videoAlt = outgoing;
+  video.classList.add('is-active-video');
+  videoAlt.classList.remove('is-active-video');
+  videoBg.currentTime = video.currentTime;
+  preloadTargetTime = null;
+  video.play().catch(() => {});
+  outgoing.pause();
+}
+
+// ---------------------------------------------------------------------------
+// Export — lazy-loads ffmpeg.wasm only when actually exporting.
+// ---------------------------------------------------------------------------
+let ffmpeg = null;
+let ffmpegLoadPromise = null;
+async function ensureFFmpeg(onLog) {
+  if (ffmpeg) return ffmpeg;
+  if (!ffmpegLoadPromise) {
+    ffmpegLoadPromise = (async () => {
+      const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const inst = new FFmpeg();
+      if (onLog) inst.on('log', ({ message }) => onLog(message));
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+      const ffBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
+      // FFmpeg's own internal worker is also loaded from the CDN origin —
+      // browsers refuse `new Worker(crossOriginURL)` outright, so it needs
+      // the same blob: trick as the core files above. But worker.js itself
+      // has top-level `import ... from "./const.js"` (relative) statements —
+      // once wrapped in a blob: URL those can't resolve to anything, which
+      // fails the worker's module load silently (fires worker.onerror with
+      // no message, which FFmpeg's own code never listens for), so the
+      // load() promise just hangs forever. Rewriting the relative specifiers
+      // to absolute CDN URLs before blobbing fixes the resolution.
+      let workerSrc = await fetch(`${ffBase}/worker.js`).then((r) => r.text());
+      workerSrc = workerSrc
+        .replace('from "./const.js"', `from "${ffBase}/const.js"`)
+        .replace('from "./errors.js"', `from "${ffBase}/errors.js"`);
+      const classWorkerURL = URL.createObjectURL(new Blob([workerSrc], { type: 'text/javascript' }));
+      await inst.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        classWorkerURL,
+      });
+      ffmpeg = inst;
+      return inst;
+    })();
+  }
+  return ffmpegLoadPromise;
+}
+
+function resetExportUI() {
+  document.getElementById('export-error').style.display = 'none';
+  document.getElementById('export-done').style.display = 'none';
+  document.getElementById('progress-wrap').classList.remove('show');
+  document.getElementById('progress-fill').style.width = '0%';
+}
+function setExportError(msg) {
+  const el = document.getElementById('export-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+function setProgress(frac, label) {
+  document.getElementById('progress-fill').style.width = Math.round(Math.min(1, Math.max(0, frac)) * 100) + '%';
+  if (label) document.getElementById('progress-label').textContent = label;
+}
+function extOf(name) { const m = /\.[a-z0-9]+$/i.exec(name); return m ? m[0] : '.mp4'; }
+function outputFilename() {
+  const base = (file.name || 'video').replace(/\.[a-z0-9]+$/i, '');
+  return `${base}-trimmed.mp4`;
+}
+function downloadBytes(data, filename) {
+  const blob = new Blob([data], { type: 'video/mp4' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function exportVideo() {
+  const kept = getKeptSegments();
+  if (!kept.length) return;
+
+  const btn = document.getElementById('btn-export');
+  btn.disabled = true;
+  document.getElementById('export-spinner').classList.add('show');
+  document.getElementById('export-label').textContent = 'Exporting…';
+  resetExportUI();
+  document.getElementById('progress-wrap').classList.add('show');
+  setProgress(0, 'Loading video engine…');
+
+  try {
+    // No cuts at all — just hand back the original file, no need to touch FFmpeg.
+    if (kept.length === 1 && trimStart <= 0.05 && trimEnd >= duration - 0.05) {
+      setProgress(1, 'Done');
+      downloadBytes(await file.arrayBuffer(), outputFilename());
+      finishExportUI(true);
+      return;
+    }
+
+    const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+    const ff = await ensureFFmpeg();
+    setProgress(0.08, 'Reading video…');
+
+    const inputName = 'input' + extOf(file.name);
+    await ff.writeFile(inputName, await fetchFile(file));
+
+    const totalSteps = kept.length + 1;
+    const segNames = [];
+    for (let i = 0; i < kept.length; i++) {
+      const { start, end } = kept[i];
+      const outName = `seg${i}.mp4`;
+      // Stream-copy trimming (-c copy) looked fast but was WRONG: with -ss/-to
+      // as input options, ffmpeg.wasm's core snaps segment edges outward to
+      // the enclosing keyframes instead of the requested boundary — so a cut
+      // in the middle could leave most of the "removed" footage still in the
+      // export. Re-encoding each kept segment is slower but frame-accurate,
+      // which matters more here since a cut that doesn't actually cut is
+      // useless. ultrafast keeps it close to the old speed in practice.
+      await ff.exec(['-i', inputName, '-ss', String(start), '-to', String(end), '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20', '-c:a', 'aac', outName]);
+      segNames.push(outName);
+      setProgress((i + 1) / totalSteps, `Cutting segment ${i + 1} of ${kept.length}…`);
+    }
+
+    let finalName;
+    if (segNames.length === 1) {
+      finalName = segNames[0];
+    } else {
+      const list = segNames.map(n => `file '${n}'`).join('\n');
+      await ff.writeFile('list.txt', new TextEncoder().encode(list));
+      await ff.exec(['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', 'final.mp4']);
+      finalName = 'final.mp4';
+    }
+    setProgress(0.97, 'Finishing up…');
+
+    const data = await ff.readFile(finalName);
+    downloadBytes(data, outputFilename());
+    setProgress(1, 'Done');
+    finishExportUI(true);
+  } catch (err) {
+    console.error(err);
+    setExportError('Export failed — try a shorter clip or a different browser.');
+    finishExportUI(false);
+  }
+}
+
+function finishExportUI(success) {
+  const btn = document.getElementById('btn-export');
+  btn.disabled = false;
+  document.getElementById('export-spinner').classList.remove('show');
+  document.getElementById('export-label').textContent = '🚀 Export as MP4';
+  updateSummary();
+  if (success) {
+    document.getElementById('export-done').textContent = `✓ Downloaded ${outputFilename()}`;
+    document.getElementById('export-done').style.display = 'block';
+    setTimeout(() => document.getElementById('progress-wrap').classList.remove('show'), 1200);
+  }
+}
+</script>
+<script src="/theme-toggle.js"></script>
+</body>
+</html>
